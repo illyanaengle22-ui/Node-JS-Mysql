@@ -6,6 +6,7 @@ class UserController {
     this.list = this.list.bind(this);
     this.update = this.update.bind(this);
     this.remove = this.remove.bind(this);
+    this.updateByEmail = this.updateByEmail.bind(this);
   }
 
   async register(req, res) {
@@ -18,7 +19,7 @@ class UserController {
       if (error.code === "VALIDATION_ERROR") {
         return res.status(400).json({ msg: error.message });
       }
-      if (error.code === "ER_DUP_ENTRY" || error.code === "DUPLICATE_EMAIL") {
+      if (error.code === "23505" || error.code === "DUPLICATE_EMAIL") {
         return res.status(409).json({ msg: "El correo ya existe" });
       }
       res.status(500).json({ msg: "Error del servidor" });
@@ -29,8 +30,8 @@ class UserController {
     const { email, password } = req.body;
 
     try {
-      const token = await this.userService.loginUser({ email, password });
-      res.json({ msg: "Login exitoso", token });
+      const { token, nombre } = await this.userService.loginUser({ email, password });
+      res.json({ msg: "Login exitoso", token, nombre });
     } catch (error) {
       if (error.code === "INVALID_CREDENTIALS") {
         return res.status(401).json({ msg: "Credenciales incorrectas" });
@@ -58,6 +59,9 @@ class UserController {
       if (error.code === "VALIDATION_ERROR") {
         return res.status(400).json({ msg: error.message });
       }
+      if (error.code == "NOT_FOUND"){
+	return res.status(404).json({msg: error.message });
+      }
       console.error("ERROR REAL:", error);
       res.status(500).json({ msg: "Error del servidor" });
     }
@@ -69,6 +73,23 @@ class UserController {
       await this.userService.eliminarUsuario(id);
       res.json({ msg: "Usuario eliminado correctamente" });
     } catch (error) {
+      if (error.code === "NOT_FOUND") {
+        return res.status(404).json({ msg: error.message });
+      }
+      console.error("ERROR REAL:", error);
+      res.status(500).json({ msg: "Error del servidor" });
+    }
+  }
+  async updateByEmail(req, res) {
+    const { email, nombre, password } = req.body;
+
+    try {
+      await this.userService.actualizarPorEmail(email, { nombre, password });
+      res.json({ msg: "Usuario actualizado correctamente" });
+    } catch (error) {
+      if (error.code === "VALIDATION_ERROR") {
+        return res.status(400).json({ msg: error.message });
+      }
       if (error.code === "NOT_FOUND") {
         return res.status(404).json({ msg: error.message });
       }

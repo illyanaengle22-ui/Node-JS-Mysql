@@ -19,6 +19,7 @@ app.get("/usuarios", userController.list);
 app.post("/usuarios", userController.register);
 app.post("/login", userController.login);
 app.put("/usuarios/:id", userController.update);
+app.put("/usuarios", userController.updateByEmail);
 app.delete("/usuarios/:id", userController.remove);
 
 app.listen(process.env.PORT || 3000, () => {

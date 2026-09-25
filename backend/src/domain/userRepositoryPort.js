@@ -15,6 +15,9 @@ class UserRepositoryPort {
   async deleteById(id){
 	throw new Error("Metodo deleteById() no implementado");
  }
+  async updateByEmail(email, datos) {
+    throw new Error("Método updateByEmail() no implementado");
+  }
 }
 
 module.exports = UserRepositoryPort;

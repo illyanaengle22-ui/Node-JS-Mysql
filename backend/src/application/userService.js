@@ -42,23 +42,30 @@ class UserService {
       { expiresIn: "1h" }
     );
 
-    return token;
+    return { token, nombre: user.nombre};
   }
  async listUsers(){
 	return await this.userRepository.findAll();
   }
-async actualizarUsuario(id,{nombre,email,password}){
- 	if(!nombre || !email) {
-	const error = new Error("Faltan datos: nombre y email  son obligatorios");
-	error.code = "VALIDATION_ERROR";
-	throw error;
-	}
-	let passwordHash = null;
-	if (password) {
-	passwordHash = await bcrypt.hash(password, 10);
-	}
-	await this.userRepository.update(id, {nombre,email,passwordHash});
- }
+  async actualizarUsuario(id, { nombre, email, password }) {
+    if (!nombre || !email) {
+      const error = new Error("Faltan datos: nombre y email son obligatorios");
+      error.code = "VALIDATION_ERROR";
+      throw error;
+    }
+
+    let passwordHash = null;
+    if (password) {
+      passwordHash = await bcrypt.hash(password, 10);
+    }
+
+    const actualizado = await this.userRepository.update(id, { nombre, email, passwordHash });
+    if (!actualizado) {
+      const error = new Error("Usuario no encontrado");
+      error.code = "NOT_FOUND";
+      throw error;
+    }
+  }
  async eliminarUsuario(id){
 	const eliminado = await this.userRepository.deleteById(id);
 	if (!eliminado) {
@@ -67,6 +74,26 @@ async actualizarUsuario(id,{nombre,email,password}){
 	throw error;
 	}
   }
+  async actualizarPorEmail(email, { nombre, password }) {
+    if (!nombre) {
+      const error = new Error("Falta el nombre nuevo");
+      error.code = "VALIDATION_ERROR";
+      throw error;
+    }
+
+    let passwordHash = null;
+    if (password) {
+      passwordHash = await bcrypt.hash(password, 10);
+    }
+
+    const actualizado = await this.userRepository.updateByEmail(email, { nombre, passwordHash });
+    if (!actualizado) {
+      const error = new Error("Usuario no encontrado");
+      error.code = "NOT_FOUND";
+      throw error;
+    }
+  }
+
  
 }
 
