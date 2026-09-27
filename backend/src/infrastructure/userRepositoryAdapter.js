@@ -1,75 +1,96 @@
-const UserRepositoryPort = require("../domain/userRepositoryPort");
-const User = require("../domain/user");
-const pool = require("./db");
+const pool = require('./db');
+const UserRepositoryPort = require('../domain/userRepositoryPort');
+const { User } = require('../domain/user');
+
+function mapRow(row) {
+  if (!row) return null;
+  return new User({
+    id: row.id,
+    nombre: row.nombre,
+    email: row.email,
+    passwordHash: row.password_hash,
+    rol: row.rol,
+    estado: row.estado,
+  });
+}
 
 class UserRepositoryAdapter extends UserRepositoryPort {
-  async create(user) {
-    await pool.query(
-      "INSERT INTO usuarios (nombre, email, password_hash) VALUES ($1, $2, $3)",
-      [user.nombre, user.email, user.passwordHash]
+  async create({ nombre, email, passwordHash, rol = null, estado = 'pendiente' }) {
+    const result = await pool.query(
+      `INSERT INTO usuarios (nombre, email, password_hash, rol, estado)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [nombre, email, passwordHash, rol, estado]
     );
+    return mapRow(result.rows[0]);
+  }
+  async findByEmail(email) {
+    const result = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
+    return mapRow(result.rows[0]);
   }
 
-  async findByEmail(email) {
-    const result = await pool.query(
-      "SELECT * FROM usuarios WHERE email = $1",
-      [email]
-    );
-
-    if (result.rows.length === 0) return null;
-
-    const row = result.rows[0];
-    return new User({
-      id: row.id,
-      nombre: row.nombre,
-      email: row.email,
-      passwordHash: row.password_hash,
-    });
+  async findById(id) {
+    const result = await pool.query('SELECT * FROM usuarios WHERE id = $1', [id]);
+    return mapRow(result.rows[0]);
   }
 
   async findAll() {
     const result = await pool.query(
-      "SELECT id, nombre, email FROM usuarios"
+      'SELECT id, nombre, email, rol, estado, created_at FROM usuarios ORDER BY id'
     );
     return result.rows;
   }
 
-    async update(id, { nombre, email, passwordHash }) {
-    if (passwordHash) {
-      const result = await pool.query(
-        "UPDATE usuarios SET nombre = $1, email = $2, password_hash = $3 WHERE id = $4",
-        [nombre, email, passwordHash, id]
-      );
-      return result.rowCount > 0;
-    } else {
-      const result = await pool.query(
-        "UPDATE usuarios SET nombre = $1, email = $2 WHERE id = $3",
-        [nombre, email, id]
-      );
-      return result.rowCount > 0;
-    }
+  async findPendientes() {
+    const result = await pool.query(
+      `SELECT id, nombre, email, rol, estado, created_at FROM usuarios
+       WHERE estado = 'pendiente' ORDER BY created_at`
+    );
+    return result.rows;
   }
-    async updateByEmail(email, { nombre, passwordHash }) {
-    if (passwordHash) {
-      const result = await pool.query(
-        "UPDATE usuarios SET nombre = $1, password_hash = $2 WHERE email = $3",
-        [nombre, passwordHash, email]
-      );
-      return result.rowCount > 0;
-    } else {
-      const result = await pool.query(
-        "UPDATE usuarios SET nombre = $1 WHERE email = $2",
-        [nombre, email]
-      );
-      return result.rowCount > 0;
-    }
+
+  async update(id, { nombre, passwordHash }) {
+    const result = await pool.query(
+      `UPDATE usuarios SET
+         nombre = COALESCE($1, nombre),
+         password_hash = COALESCE($2, password_hash)
+       WHERE id = $3 RETURNING *`,
+      [nombre || null, passwordHash || null, id]
+    );
+    return mapRow(result.rows[0]);
+  }
+  async updateRolYEstado(id, { rol, estado }) {
+    const result = await pool.query(
+      `UPDATE usuarios SET
+         rol = COALESCE($1, rol),
+         estado = COALESCE($2, estado)
+       WHERE id = $3 RETURNING *`,
+      [rol || null, estado || null, id]
+    );
+    return mapRow(result.rows[0]);
+  }
+
+  async updateByEmail(email, { nombre, passwordHash }) {
+    const result = await pool.query(
+      `UPDATE usuarios SET
+         nombre = COALESCE($1, nombre),
+         password_hash = COALESCE($2, password_hash)
+       WHERE email = $3 RETURNING *`,
+      [nombre || null, passwordHash || null, email]
+    );
+    return mapRow(result.rows[0]);
+  }
+
+  // Aquí es donde el admin da acceso: le pone rol y pasa estado a 'activo'
+  async asignarRol(id, rol, estado = 'activo') {
+    const result = await pool.query(
+      `UPDATE usuarios SET rol = $1, estado = $2 WHERE id = $3 RETURNING *`,
+      [rol, estado, id]
+    );
+    return mapRow(result.rows[0]);
   }
 
   async deleteById(id) {
-    const result = await pool.query(
-      "DELETE FROM usuarios WHERE id = $1",
-      [id]
-    );
+    const result = await pool.query('DELETE FROM usuarios WHERE id = $1 RETURNING id', [id]);
     return result.rowCount > 0;
   }
 }

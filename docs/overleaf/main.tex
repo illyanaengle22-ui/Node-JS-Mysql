@@ -1,0 +1,214 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+
+% Colores para código
+\definecolor{codebg}{RGB}{245,240,230}
+\definecolor{codecomment}{RGB}{100,120,100}
+\definecolor{codestring}{RGB}{180,60,60}
+\definecolor{codekw}{RGB}{60,60,150}
+
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  commentstyle=\color{codecomment}\itshape,
+  keywordstyle=\color{codekw}\bfseries,
+  stringstyle=\color{codestring},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{gray},
+  showstringspaces=false,
+}
+
+\title{\Huge \textbf{Vinilos \& Co.} \\ \Large Marketplace de Vinilos con Arquitectura Hexagonal}
+\author{Illyana Julienne Engle Reyes}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Introducción}
+
+\textbf{Vinilos \& Co.} es una plataforma de comercio electrónico para venta de vinilos de música. El sistema implementa una \textbf{arquitectura hexagonal} (Ports \& Adapters) con separación estricta de capas, permitiendo que la lógica de negocio sea independiente de los frameworks y las bases de datos.
+
+\subsection{Objetivos}
+
+\begin{itemize}
+  \item Modelar tres entidades interconectadas: \textbf{Usuario}, \textbf{Producto} y \textbf{Pedido}.
+  \item Implementar CRUDs completos para cada entidad con control de acceso por roles.
+  \item Asegurar las credenciales mediante hashing con bcrypt.
+  \item Gestionar imágenes de productos fuera de la base de datos.
+  \item Aplicar arquitectura hexagonal en el backend.
+  \item Construir una SPA en React con módulos por rol.
+\end{itemize}
+
+\section{Arquitectura del Sistema}
+
+\subsection{Capas}
+
+El backend está organizado en cuatro capas:
+
+\begin{enumerate}
+  \item \textbf{Dominio:} entidades puras (\texttt{User}, \texttt{Product}, \texttt{Order}) y puertos de persistencia.
+  \item \textbf{Aplicación:} servicios con la lógica de los casos de uso.
+  \item \textbf{Infraestructura:} adaptadores que implementan los puertos (PostgreSQL, bcrypt, multer, svg-captcha).
+  \item \textbf{Interfaces:} controladores HTTP (Express) y middlewares de autenticación y roles.
+\end{enumerate}
+
+\subsection{Diagrama}
+
+\begin{verbatim}
+┌─────────────────────────────────────┐
+│         INTERFACES (HTTP)           │
+│    Controllers + Middlewares        │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│      APPLICATION (Servicios)        │
+│   userService / productService      │
+│   orderService / captchaStore       │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│            DOMAIN                   │
+│   Entidades + Puertos + Reglas      │
+└──────────────▲──────────────────────┘
+               │
+┌──────────────┴──────────────────────┐
+│        INFRASTRUCTURE               │
+│   PostgreSQL / bcrypt / multer      │
+└─────────────────────────────────────┘
+\end{verbatim}
+
+\section{Modelo de Base de Datos}
+
+\subsection{Tabla \texttt{usuarios}}
+
+\begin{itemize}
+  \item \texttt{id} SERIAL PRIMARY KEY
+  \item \texttt{nombre} VARCHAR(100)
+  \item \texttt{email} VARCHAR(150) UNIQUE
+  \item \texttt{password\_hash} VARCHAR(255)
+  \item \texttt{rol} VARCHAR(20) — \texttt{admin}, \texttt{producto}, \texttt{pedido} o NULL
+  \item \texttt{estado} VARCHAR(20) — \texttt{pendiente}, \texttt{activo}, \texttt{rechazado}
+  \item \texttt{created\_at} TIMESTAMP
+\end{itemize}
+
+\subsection{Tabla \texttt{productos}}
+
+\begin{itemize}
+  \item \texttt{id} SERIAL PRIMARY KEY
+  \item \texttt{nombre}, \texttt{artista}, \texttt{descripcion}
+  \item \texttt{precio} NUMERIC(10,2)
+  \item \texttt{imagen\_url} VARCHAR(255) — ruta al archivo (no el binario)
+  \item \texttt{stock} INT
+  \item \texttt{estado} VARCHAR(20) — \texttt{pendiente}, \texttt{aprobado}, \texttt{rechazado}, \texttt{vendido}
+  \item \texttt{creado\_por} INT REFERENCES usuarios(id)
+\end{itemize}
+
+\subsection{Tabla \texttt{pedidos}}
+
+\begin{itemize}
+  \item \texttt{id} SERIAL PRIMARY KEY
+  \item \texttt{usuario\_id}, \texttt{producto\_id}
+  \item \texttt{cantidad} INT
+  \item \texttt{total} NUMERIC(10,2)
+  \item \texttt{estado} VARCHAR(20)
+\end{itemize}
+
+\section{Endpoints Principales}
+
+\subsection{Autenticación}
+\begin{itemize}
+  \item \texttt{POST /usuarios} — Registro con captcha
+  \item \texttt{POST /login} — Login con captcha → JWT
+  \item \texttt{GET /captcha} — Genera captcha SVG
+\end{itemize}
+
+\subsection{Usuarios (admin)}
+\begin{itemize}
+  \item \texttt{GET /usuarios} — Listar
+  \item \texttt{PUT /usuarios/:id/aprobar} — Aprobar y asignar rol
+  \item \texttt{PUT /usuarios/:id/rol} — Cambiar rol
+  \item \texttt{DELETE /usuarios/:id} — Eliminar
+\end{itemize}
+
+\subsection{Productos}
+\begin{itemize}
+  \item \texttt{GET /productos} — Listar según rol
+  \item \texttt{GET /productos/catalogo} — Catálogo público
+  \item \texttt{POST /productos} — Crear (multipart con imagen)
+  \item \texttt{PUT /productos/:id/aprobar} — Aprobar
+  \item \texttt{DELETE /productos/:id} — Eliminar
+\end{itemize}
+
+\subsection{Pedidos}
+\begin{itemize}
+  \item \texttt{POST /pedidos} — Crear pedido
+  \item \texttt{GET /pedidos} — Listar según rol
+  \item \texttt{PUT /pedidos/:id/aprobar} — Aprobar pedido
+  \item \texttt{GET /pedidos/mis-solicitudes} — Solicitudes del vendedor
+\end{itemize}
+
+\section{Guía de Despliegue en WSL}
+
+\subsection{Requisitos}
+\begin{itemize}
+  \item WSL (Ubuntu)
+  \item Node.js 20+
+  \item PostgreSQL 14+
+  \item Git
+\end{itemize}
+
+\subsection{Pasos}
+
+\begin{lstlisting}[language=bash]
+# 1. Clonar
+git clone https://github.com/illyanaengle22-ui/Node-JS-Mysql.git webapp
+cd webapp
+
+# 2. Base de datos
+sudo -u postgres psql -c "CREATE DATABASE practica_api;"
+sudo -u postgres psql -d practica_api -f backend/migrations/001_init_vinilos.sql
+
+# 3. Backend
+cd backend && npm install
+# Crear src/.env con DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, JWT_SECRET
+node src/server.js
+
+# 4. Frontend (nueva terminal)
+cd ../frontend && npm install
+npm run dev
+\end{lstlisting}
+
+\subsection{Credenciales de prueba}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Email} & \textbf{Contraseña} \\
+\hline
+admin@vinilos.com & admin123 \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Conclusiones}
+
+El proyecto demuestra la aplicación práctica de arquitectura hexagonal en un caso real de comercio electrónico, con separación estricta de responsabilidades, seguridad de credenciales y control de acceso por roles. La solución es mantenible, escalable y testeable.
+
+\end{document}

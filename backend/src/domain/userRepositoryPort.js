@@ -1,23 +1,13 @@
 class UserRepositoryPort {
-  async create(user) {
-    throw new Error("Método create() no implementado");
-  }
-
-  async findByEmail(email) {
-    throw new Error("Método findByEmail() no implementado");
-  }
-  async findAll(){
-	throw new Error("Metodo findAll() no implementado");
-  }
-  async update(id,datos){
-  	throw new Error("Metodo update() no implementado");
- }
-  async deleteById(id){
-	throw new Error("Metodo deleteById() no implementado");
- }
-  async updateByEmail(email, datos) {
-    throw new Error("Método updateByEmail() no implementado");
-  }
+  async create(user) { throw new Error('No implementado'); }
+  async findByEmail(email) { throw new Error('No implementado'); }
+  async findById(id) { throw new Error('No implementado'); }
+  async findAll() { throw new Error('No implementado'); }
+  async findPendientes() { throw new Error('No implementado'); }
+  async update(id, data) { throw new Error('No implementado'); }
+  async updateByEmail(email, data) { throw new Error('No implementado'); }
+  async asignarRol(id, rol, estado) { throw new Error('No implementado'); }
+  async deleteById(id) { throw new Error('No implementado'); }
 }
 
 module.exports = UserRepositoryPort;
