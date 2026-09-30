@@ -1,0 +1,78 @@
+/* =========================================================================
+   TalkVinyl. — Base global
+   ========================================================================= */
+
+/* Fuentes desde Google Fonts (se cargan vía CDN, no se descargan) */
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Anton&family=Courier+Prime:wght@400;700&display=swap');
+
+:root {
+  /* Colores */
+  --black:      #0d0d0d;
+  --black-2:    #171512;
+  --paper:      #1c1a17;
+  --paper-2:    #262320;
+  --off-white:  #f0ece2;
+  --red:        #dd160c;
+  --red-d:      #a5170f;
+  --yellow:     #f2c94c;
+  --teal:       #3d9b8f;
+  --success:    #4a9d4a;
+  --warning:    #f2c94c;
+  --danger:     #e2231a;
+  --brown:      #b8a98d;
+
+  /* Tipografía */
+  --font-display: 'Anton', 'Oswald', sans-serif;
+  --font-body:    'Special Elite', 'Courier Prime', monospace;
+
+  /* Bordes y sombras */
+  --border:      2px solid var(--off-white);
+  --border-thin: 1px solid var(--brown);
+  --shadow:      5px 5px 0 var(--red);
+  --shadow-sm:   3px 3px 0 var(--red);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  color: var(--off-white);
+  background-color: var(--black);
+  background-image: url('/fondo.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+/* ... resto igual ... */
+
+/* ---------- TIPOGRAFÍA BASE ---------- */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  color: var(--off-white);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+h1 {
+  font-size: 2.4rem;
+  color: var(--red);
+  text-shadow:
+    2px 2px 0 var(--black-2),
+    -1px 0 0 var(--teal),
+    1px 0 0 rgba(226,35,26,.6);
+}
+h2 { font-size: 1.5rem; border-bottom: 2px dashed var(--brown); padding-bottom: 8px; }
+h3 { font-size: 1.05rem; }
+
+/* ---------- SCROLLBAR OCULTO ---------- */
+* {
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* Edge / IE */
+}
+*::-webkit-scrollbar {
+  display: none;              /* Chrome / Safari / Edge moderno */
+}
