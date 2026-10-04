@@ -1,0 +1,7 @@
+# Ignorar TODO excepto frontend/dist
+*
+
+# Excepto la carpeta del build del frontend
+!frontend/
+!frontend/dist/
+!frontend/dist/**
