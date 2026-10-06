@@ -24,5 +24,5 @@ EOF
 
 mkdir -p src/uploads
 pm2 delete api 2>/dev/null || true
-pm2 start src/server.js --name api --cwd "$(pwd)"
+pm2 start dist/server.js --name api --cwd "$(pwd)"
 pm2 save
