@@ -7,11 +7,9 @@ DB_IP=$1
 : "${DB_PASSWORD:?Falta DB_PASSWORD}"
 : "${JWT_SECRET:?Falta JWT_SECRET}"
 
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
 sudo npm i -g pm2
 
-npm ci --omit=dev
+npm install --omit=dev
 
 # .env en la raíz del backend (= directorio de trabajo de pm2)
 cat > .env <<EOF
