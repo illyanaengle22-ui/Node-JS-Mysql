@@ -11,11 +11,6 @@
     "svg-captcha": "^1.4.0"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2",
     "nodemon": "^3.1.14"
-  },
-"scripts": {
-  "start": "node dist/server.js",
-  "build": "esbuild src/server.js --bundle --platform=node --outfile=dist/server.js --minify --packages=external"
   }
 }
