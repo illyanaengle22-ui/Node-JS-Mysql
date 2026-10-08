@@ -47714,7 +47714,16 @@ var require_productRepositoryAdapter = __commonJS({
 var require_orderRepositoryPort = __commonJS({
   "src/domain/orderRepositoryPort.js"(exports2, module2) {
     var OrderRepositoryPort = class {
-      async create(order) {
+      async crearYReservar({ usuarioId, productoId, cantidad }) {
+        throw new Error("No implementado");
+      }
+      async aprobar(id) {
+        throw new Error("No implementado");
+      }
+      async rechazarYLiberar(id) {
+        throw new Error("No implementado");
+      }
+      async eliminarYLiberar(id) {
         throw new Error("No implementado");
       }
       async findAll() {
@@ -47723,10 +47732,10 @@ var require_orderRepositoryPort = __commonJS({
       async findByUsuario(usuarioId) {
         throw new Error("No implementado");
       }
-      async findById(id) {
+      async findByCreadorProducto(vendedorId) {
         throw new Error("No implementado");
       }
-      async deleteById(id) {
+      async findById(id) {
         throw new Error("No implementado");
       }
     };
@@ -47737,21 +47746,54 @@ var require_orderRepositoryPort = __commonJS({
 // src/domain/order.js
 var require_order = __commonJS({
   "src/domain/order.js"(exports2, module2) {
-    var Order = class {
+    var Order = class _Order {
       constructor({ id, usuarioId, productoId, cantidad = 1, total, estado = "pendiente", createdAt }) {
         this.id = id;
         this.usuarioId = usuarioId;
         this.productoId = productoId;
-        this.cantidad = cantidad;
+        this.cantidad = Number(cantidad);
         this.total = total;
         this.estado = estado;
         this.createdAt = createdAt;
       }
+      static validarCantidad(cantidad) {
+        const num = Number(cantidad);
+        if (!Number.isInteger(num) || num <= 0) {
+          const err = new Error("La cantidad debe ser un n\xFAmero entero mayor a 0");
+          err.statusCode = 400;
+          throw err;
+        }
+        return num;
+      }
       static validar({ productoId, usuarioId, cantidad }) {
-        if (!productoId) throw new Error("productoId es obligatorio");
-        if (!usuarioId) throw new Error("usuarioId es obligatorio");
-        if (cantidad !== void 0 && (Number.isNaN(Number(cantidad)) || Number(cantidad) <= 0)) {
-          throw new Error("La cantidad debe ser mayor a 0");
+        if (!productoId) {
+          const err = new Error("productoId es obligatorio");
+          err.statusCode = 400;
+          throw err;
+        }
+        if (!usuarioId) {
+          const err = new Error("usuarioId es obligatorio");
+          err.statusCode = 400;
+          throw err;
+        }
+        _Order.validarCantidad(cantidad);
+        return true;
+      }
+      static validarStock(stockDisponible, cantidadSolicitada) {
+        if (stockDisponible !== void 0 && stockDisponible !== null) {
+          if (Number(stockDisponible) < Number(cantidadSolicitada)) {
+            const err = new Error(`Stock insuficiente para realizar el pedido. Stock disponible: ${stockDisponible}, solicitado: ${cantidadSolicitada}`);
+            err.statusCode = 400;
+            throw err;
+          }
+        }
+        return true;
+      }
+      static puedeCambiarEstado(estadoActual) {
+        if (estadoActual !== "pendiente") {
+          const err = new Error(`El pedido ya fue procesado (estado actual: '${estadoActual}'). Solo se pueden procesar pedidos en estado 'pendiente'`);
+          err.statusCode = 409;
+          throw err;
         }
         return true;
       }
@@ -47782,15 +47824,145 @@ var require_orderRepositoryAdapter = __commonJS({
       });
     }
     var OrderRepositoryAdapter2 = class extends OrderRepositoryPort {
-      async create({ usuarioId, productoId, cantidad, total }) {
-        const result = await pool.query(
-          `INSERT INTO pedidos (usuario_id, producto_id, cantidad, total)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-          [usuarioId, productoId, cantidad, total]
-        );
-        return mapRow(result.rows[0]);
+      /**
+       * Reserva stock de forma atómica e inserta el pedido con estado 'pendiente'.
+       * Ejecutado dentro de una transacción PostgreSQL.
+       */
+      async crearYReservar({ usuarioId, productoId, cantidad }) {
+        const client = await pool.connect();
+        try {
+          await client.query("BEGIN");
+          const resStock = await client.query(
+            `UPDATE productos
+            SET stock = stock - $1
+          WHERE id = $2 AND stock >= $1 AND estado = 'aprobado'
+         RETURNING id, precio, stock`,
+            [cantidad, productoId]
+          );
+          if (resStock.rowCount === 0) {
+            const resProd = await client.query("SELECT * FROM productos WHERE id = $1", [productoId]);
+            if (resProd.rowCount === 0) {
+              const err2 = new Error("Producto no encontrado");
+              err2.statusCode = 404;
+              throw err2;
+            }
+            const prod = resProd.rows[0];
+            if (prod.estado !== "aprobado") {
+              const err2 = new Error("Este producto todav\xEDa no est\xE1 disponible en el cat\xE1logo");
+              err2.statusCode = 400;
+              throw err2;
+            }
+            const err = new Error(`Stock insuficiente para realizar el pedido. Stock disponible: ${prod.stock}, solicitado: ${cantidad}`);
+            err.statusCode = 400;
+            throw err;
+          }
+          const producto = resStock.rows[0];
+          const total = Order.calcularTotal(producto.precio, cantidad);
+          const resPedido = await client.query(
+            `INSERT INTO pedidos (usuario_id, producto_id, cantidad, total, estado)
+         VALUES ($1, $2, $3, $4, 'pendiente') RETURNING *`,
+            [usuarioId, productoId, cantidad, total]
+          );
+          await client.query("COMMIT");
+          return mapRow(resPedido.rows[0]);
+        } catch (err) {
+          await client.query("ROLLBACK");
+          throw err;
+        } finally {
+          client.release();
+        }
       }
-      // datos productos
+      /**
+       * Cambia el estado del pedido a 'aprobado'. NO toca el stock (ya fue reservado).
+       */
+      async aprobar(id) {
+        const client = await pool.connect();
+        try {
+          await client.query("BEGIN");
+          const resCheck = await client.query("SELECT * FROM pedidos WHERE id = $1 FOR UPDATE", [id]);
+          if (resCheck.rowCount === 0) {
+            const err = new Error("Pedido no encontrado");
+            err.statusCode = 404;
+            throw err;
+          }
+          const pedidoActual = resCheck.rows[0];
+          Order.puedeCambiarEstado(pedidoActual.estado);
+          const resUpdate = await client.query(
+            `UPDATE pedidos SET estado = 'aprobado' WHERE id = $1 AND estado = 'pendiente' RETURNING *`,
+            [id]
+          );
+          await client.query("COMMIT");
+          return mapRow(resUpdate.rows[0]);
+        } catch (err) {
+          await client.query("ROLLBACK");
+          throw err;
+        } finally {
+          client.release();
+        }
+      }
+      /**
+       * Cambia el estado a 'rechazado' y libera (devuelve) el stock al producto.
+       */
+      async rechazarYLiberar(id) {
+        const client = await pool.connect();
+        try {
+          await client.query("BEGIN");
+          const resCheck = await client.query("SELECT * FROM pedidos WHERE id = $1 FOR UPDATE", [id]);
+          if (resCheck.rowCount === 0) {
+            const err = new Error("Pedido no encontrado");
+            err.statusCode = 404;
+            throw err;
+          }
+          const pedidoActual = resCheck.rows[0];
+          Order.puedeCambiarEstado(pedidoActual.estado);
+          await client.query(
+            `UPDATE pedidos SET estado = 'rechazado' WHERE id = $1 AND estado = 'pendiente'`,
+            [id]
+          );
+          await client.query(
+            `UPDATE productos SET stock = stock + $1 WHERE id = $2`,
+            [pedidoActual.cantidad, pedidoActual.producto_id]
+          );
+          await client.query("COMMIT");
+          return true;
+        } catch (err) {
+          await client.query("ROLLBACK");
+          throw err;
+        } finally {
+          client.release();
+        }
+      }
+      /**
+       * Elimina un pedido. Si estaba 'pendiente', libera el stock reservado.
+       * Si ya estaba 'aprobado' o 'rechazado', elimina sin devolver stock adicional.
+       */
+      async eliminarYLiberar(id) {
+        const client = await pool.connect();
+        try {
+          await client.query("BEGIN");
+          const resCheck = await client.query("SELECT * FROM pedidos WHERE id = $1 FOR UPDATE", [id]);
+          if (resCheck.rowCount === 0) {
+            const err = new Error("Pedido no encontrado");
+            err.statusCode = 404;
+            throw err;
+          }
+          const pedidoActual = resCheck.rows[0];
+          if (pedidoActual.estado === "pendiente") {
+            await client.query(
+              `UPDATE productos SET stock = stock + $1 WHERE id = $2`,
+              [pedidoActual.cantidad, pedidoActual.producto_id]
+            );
+          }
+          await client.query("DELETE FROM pedidos WHERE id = $1", [id]);
+          await client.query("COMMIT");
+          return true;
+        } catch (err) {
+          await client.query("ROLLBACK");
+          throw err;
+        } finally {
+          client.release();
+        }
+      }
       async findAll() {
         const result = await pool.query(
           `SELECT 
@@ -47828,13 +48000,6 @@ var require_orderRepositoryAdapter = __commonJS({
         const result = await pool.query("SELECT * FROM pedidos WHERE id = $1", [id]);
         return mapRow(result.rows[0]);
       }
-      async updateEstado(id, estado) {
-        const result = await pool.query(
-          "UPDATE pedidos SET estado = $1 WHERE id = $2 RETURNING id",
-          [estado, id]
-        );
-        return result.rowCount > 0;
-      }
       async findByCreadorProducto(vendedorId) {
         const result = await pool.query(
           `SELECT 
@@ -47858,10 +48023,6 @@ var require_orderRepositoryAdapter = __commonJS({
           [vendedorId]
         );
         return result.rows;
-      }
-      async deleteById(id) {
-        const result = await pool.query("DELETE FROM pedidos WHERE id = $1 RETURNING id", [id]);
-        return result.rowCount > 0;
       }
     };
     module2.exports = OrderRepositoryAdapter2;
@@ -49827,19 +49988,21 @@ var require_orderService = __commonJS({
   "src/application/orderService.js"(exports2, module2) {
     var Order = require_order();
     var OrderService2 = class {
-      constructor(orderRepository2, productRepository2) {
+      constructor(orderRepository2) {
         this.orderRepository = orderRepository2;
-        this.productRepository = productRepository2;
       }
       async solicitarProducto({ usuarioId, productoId, cantidad = 1 }) {
         Order.validar({ productoId, usuarioId, cantidad });
-        const producto = await this.productRepository.findById(productoId);
-        if (!producto) throw new Error("Producto no encontrado");
-        if (producto.estado !== "aprobado") {
-          throw new Error("Este producto todav\xEDa no est\xE1 disponible en el cat\xE1logo");
-        }
-        const total = Order.calcularTotal(producto.precio, cantidad);
-        return this.orderRepository.create({ usuarioId, productoId, cantidad, total });
+        return this.orderRepository.crearYReservar({ usuarioId, productoId, cantidad });
+      }
+      async aprobarPedido(id) {
+        return this.orderRepository.aprobar(id);
+      }
+      async rechazarPedido(id) {
+        return this.orderRepository.rechazarYLiberar(id);
+      }
+      async eliminarPedido(id) {
+        return this.orderRepository.eliminarYLiberar(id);
       }
       async listarTodos() {
         return this.orderRepository.findAll();
@@ -49849,11 +50012,6 @@ var require_orderService = __commonJS({
       }
       async listarPorUsuario(usuarioId) {
         return this.orderRepository.findByUsuario(usuarioId);
-      }
-      async eliminarPedido(id) {
-        const eliminado = await this.orderRepository.deleteById(id);
-        if (!eliminado) throw new Error("Pedido no encontrado");
-        return true;
       }
     };
     module2.exports = OrderService2;
@@ -50104,7 +50262,10 @@ var require_orderController = __commonJS({
       constructor(orderService2) {
         this.orderService = orderService2;
       }
-      // Pedido solicta producto
+      _handleError = (res, err) => {
+        const status = err.statusCode || err.status || 400;
+        res.status(status).json({ error: err.message });
+      };
       crear = async (req, res) => {
         try {
           const { productoId, cantidad } = req.body;
@@ -50115,10 +50276,9 @@ var require_orderController = __commonJS({
           });
           res.status(201).json({ mensaje: "Pedido registrado", pedido });
         } catch (err) {
-          res.status(400).json({ error: err.message });
+          this._handleError(res, err);
         }
       };
-      // Admin ve todo pedido no
       listar = async (req, res) => {
         try {
           const { rol, id } = req.usuario;
@@ -50133,7 +50293,7 @@ var require_orderController = __commonJS({
           await this.orderService.aprobarPedido(req.params.id);
           res.json({ mensaje: "Pedido aprobado" });
         } catch (err) {
-          res.status(400).json({ error: err.message });
+          this._handleError(res, err);
         }
       };
       misSolicitudes = async (req, res) => {
@@ -50149,7 +50309,7 @@ var require_orderController = __commonJS({
           await this.orderService.rechazarPedido(req.params.id);
           res.json({ mensaje: "Pedido rechazado" });
         } catch (err) {
-          res.status(400).json({ error: err.message });
+          this._handleError(res, err);
         }
       };
       eliminar = async (req, res) => {
@@ -50157,7 +50317,7 @@ var require_orderController = __commonJS({
           await this.orderService.eliminarPedido(req.params.id);
           res.json({ mensaje: "Pedido eliminado" });
         } catch (err) {
-          res.status(400).json({ error: err.message });
+          this._handleError(res, err);
         }
       };
     };
@@ -50186,7 +50346,7 @@ var productRepository = new ProductRepositoryAdapter();
 var orderRepository = new OrderRepositoryAdapter();
 var userService = new UserService(userRepository);
 var productService = new ProductService(productRepository);
-var orderService = new OrderService(orderRepository, productRepository);
+var orderService = new OrderService(orderRepository);
 var userController = new UserController(userService);
 var productController = new ProductController(productService);
 var orderController = new OrderController(orderService);
