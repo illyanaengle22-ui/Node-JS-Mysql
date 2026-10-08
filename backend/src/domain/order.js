@@ -1,9 +1,15 @@
 class Order {
-  constructor({ id, usuarioId, productoId, cantidad = 1, total, estado = 'pendiente', createdAt }) {
+  constructor({ id, usuarioId, items = [], total, estado = 'pendiente', createdAt }) {
     this.id = id;
     this.usuarioId = usuarioId;
-    this.productoId = productoId;
-    this.cantidad = Number(cantidad);
+    this.items = items.map(item => ({
+      productoId: item.productoId || item.producto_id,
+      cantidad: Number(item.cantidad),
+      precioUnitario: item.precioUnitario ? Number(item.precioUnitario) : null,
+      nombre: item.nombre,
+      artista: item.artista,
+      imagenUrl: item.imagenUrl || item.imagen_url
+    }));
     this.total = total;
     this.estado = estado;
     this.createdAt = createdAt;
@@ -19,18 +25,25 @@ class Order {
     return num;
   }
 
-  static validar({ productoId, usuarioId, cantidad }) {
-    if (!productoId) {
-      const err = new Error('productoId es obligatorio');
-      err.statusCode = 400;
-      throw err;
-    }
+  static validar({ usuarioId, items }) {
     if (!usuarioId) {
       const err = new Error('usuarioId es obligatorio');
       err.statusCode = 400;
       throw err;
     }
-    Order.validarCantidad(cantidad);
+    if (!Array.isArray(items) || items.length === 0) {
+      const err = new Error('El pedido debe tener al menos un producto');
+      err.statusCode = 400;
+      throw err;
+    }
+    for (const item of items) {
+      if (!item.productoId) {
+        const err = new Error('productoId es obligatorio en cada item');
+        err.statusCode = 400;
+        throw err;
+      }
+      Order.validarCantidad(item.cantidad);
+    }
     return true;
   }
 

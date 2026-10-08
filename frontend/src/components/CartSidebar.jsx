@@ -14,13 +14,11 @@ export default function CartSidebar({ isOpen, onClose }) {
     setError('');
 
     try {
-      // Loop over items and create orders
-      for (const item of cartItems) {
-        await api.crearPedido({
-          productoId: item.producto.id,
-          cantidad: item.cantidad
-        });
-      }
+      const itemsPayload = cartItems.map(item => ({
+        productoId: item.producto.id,
+        cantidad: item.cantidad
+      }));
+      await api.crearPedido({ items: itemsPayload });
       setMensaje('¡Pedido confirmado con éxito!');
       clearCart();
       setTimeout(() => {

@@ -7,8 +7,7 @@ function mapRow(row) {
   return new Order({
     id: row.id,
     usuarioId: row.usuario_id,
-    productoId: row.producto_id,
-    cantidad: row.cantidad,
+    items: row.items || [],
     total: row.total !== null ? Number(row.total) : null,
     estado: row.estado,
     createdAt: row.created_at,
@@ -21,51 +20,71 @@ class OrderRepositoryAdapter extends OrderRepositoryPort {
    * Reserva stock de forma atómica e inserta el pedido con estado 'pendiente'.
    * Ejecutado dentro de una transacción PostgreSQL.
    */
-  async crearYReservar({ usuarioId, productoId, cantidad }) {
+  async crearYReservar({ usuarioId, items }) {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
-      // Intentar descontar stock atómicamente solo si el producto existe, está aprobado y tiene suficiente stock
-      const resStock = await client.query(
-        `UPDATE productos
-            SET stock = stock - $1
-          WHERE id = $2 AND stock >= $1 AND estado = 'aprobado'
-         RETURNING id, precio, stock`,
-        [cantidad, productoId]
-      );
+      let totalPedido = 0;
+      const procesados = [];
 
-      if (resStock.rowCount === 0) {
-        // Consultar el motivo específico del fallo
-        const resProd = await client.query('SELECT * FROM productos WHERE id = $1', [productoId]);
-        if (resProd.rowCount === 0) {
-          const err = new Error('Producto no encontrado');
-          err.statusCode = 404;
-          throw err;
-        }
-        const prod = resProd.rows[0];
-        if (prod.estado !== 'aprobado') {
-          const err = new Error('Este producto todavía no está disponible en el catálogo');
+      // Reservar stock para cada item
+      for (const item of items) {
+        const resStock = await client.query(
+          `UPDATE productos
+              SET stock = stock - $1
+            WHERE id = $2 AND stock >= $1 AND estado = 'aprobado'
+           RETURNING id, precio, stock, nombre`,
+          [item.cantidad, item.productoId]
+        );
+
+        if (resStock.rowCount === 0) {
+          const resProd = await client.query('SELECT * FROM productos WHERE id = $1', [item.productoId]);
+          if (resProd.rowCount === 0) {
+            const err = new Error(`Producto no encontrado (ID: ${item.productoId})`);
+            err.statusCode = 404;
+            throw err;
+          }
+          const prod = resProd.rows[0];
+          if (prod.estado !== 'aprobado') {
+            const err = new Error(`El producto "${prod.nombre}" todavía no está disponible en el catálogo`);
+            err.statusCode = 400;
+            throw err;
+          }
+          const err = new Error(`Stock insuficiente para "${prod.nombre}". Stock disponible: ${prod.stock}, solicitado: ${item.cantidad}`);
           err.statusCode = 400;
           throw err;
         }
-        // Si el estado es aprobado pero rowCount fue 0, entonces no hay suficiente stock
-        const err = new Error(`Stock insuficiente para realizar el pedido. Stock disponible: ${prod.stock}, solicitado: ${cantidad}`);
-        err.statusCode = 400;
-        throw err;
+
+        const producto = resStock.rows[0];
+        const subtotal = Order.calcularTotal(producto.precio, item.cantidad);
+        totalPedido += subtotal;
+
+        procesados.push({
+          productoId: item.productoId,
+          cantidad: item.cantidad,
+          precioUnitario: producto.precio
+        });
       }
 
-      const producto = resStock.rows[0];
-      const total = Order.calcularTotal(producto.precio, cantidad);
-
       const resPedido = await client.query(
-        `INSERT INTO pedidos (usuario_id, producto_id, cantidad, total, estado)
-         VALUES ($1, $2, $3, $4, 'pendiente') RETURNING *`,
-        [usuarioId, productoId, cantidad, total]
+        `INSERT INTO pedidos (usuario_id, total, estado)
+         VALUES ($1, $2, 'pendiente') RETURNING *`,
+        [usuarioId, totalPedido]
       );
 
+      const pedido = resPedido.rows[0];
+
+      for (const proc of procesados) {
+        await client.query(
+          `INSERT INTO pedido_items (pedido_id, producto_id, cantidad, precio_unitario)
+           VALUES ($1, $2, $3, $4)`,
+          [pedido.id, proc.productoId, proc.cantidad, proc.precioUnitario]
+        );
+      }
+
       await client.query('COMMIT');
-      return mapRow(resPedido.rows[0]);
+      return this.findById(pedido.id);
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;
@@ -98,7 +117,7 @@ class OrderRepositoryAdapter extends OrderRepositoryPort {
       );
 
       await client.query('COMMIT');
-      return mapRow(resUpdate.rows[0]);
+      return this.findById(id);
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;
@@ -131,10 +150,13 @@ class OrderRepositoryAdapter extends OrderRepositoryPort {
       );
 
       // Devolver stock reservado
-      await client.query(
-        `UPDATE productos SET stock = stock + $1 WHERE id = $2`,
-        [pedidoActual.cantidad, pedidoActual.producto_id]
-      );
+      const itemsRes = await client.query('SELECT producto_id, cantidad FROM pedido_items WHERE pedido_id = $1', [id]);
+      for (const item of itemsRes.rows) {
+        await client.query(
+          `UPDATE productos SET stock = stock + $1 WHERE id = $2`,
+          [item.cantidad, item.producto_id]
+        );
+      }
 
       await client.query('COMMIT');
       return true;
@@ -166,10 +188,13 @@ class OrderRepositoryAdapter extends OrderRepositoryPort {
 
       // Liberar stock solo si el pedido estaba en estado 'pendiente'
       if (pedidoActual.estado === 'pendiente') {
-        await client.query(
-          `UPDATE productos SET stock = stock + $1 WHERE id = $2`,
-          [pedidoActual.cantidad, pedidoActual.producto_id]
-        );
+        const itemsRes = await client.query('SELECT producto_id, cantidad FROM pedido_items WHERE pedido_id = $1', [id]);
+        for (const item of itemsRes.rows) {
+          await client.query(
+            `UPDATE productos SET stock = stock + $1 WHERE id = $2`,
+            [item.cantidad, item.producto_id]
+          );
+        }
       }
 
       await client.query('DELETE FROM pedidos WHERE id = $1', [id]);
@@ -188,15 +213,26 @@ class OrderRepositoryAdapter extends OrderRepositoryPort {
     const result = await pool.query(
       `SELECT 
          p.*,
-         pr.nombre AS producto_nombre,
-         pr.artista,
-         pr.precio AS precio_unitario,
-         pr.imagen_url,
          u.nombre AS usuario_nombre,
-         u.email AS usuario_email
+         u.email AS usuario_email,
+         COALESCE(
+           json_agg(
+             json_build_object(
+               'producto_id', pr.id,
+               'nombre', pr.nombre,
+               'artista', pr.artista,
+               'precio_unitario', pi.precio_unitario,
+               'cantidad', pi.cantidad,
+               'imagen_url', pr.imagen_url
+             )
+           ) FILTER (WHERE pi.id IS NOT NULL), 
+           '[]'
+         ) AS items
        FROM pedidos p
-       JOIN productos pr ON pr.id = p.producto_id
        LEFT JOIN usuarios u ON u.id = p.usuario_id
+       LEFT JOIN pedido_items pi ON pi.pedido_id = p.id
+       LEFT JOIN productos pr ON pr.id = pi.producto_id
+       GROUP BY p.id, u.id
        ORDER BY p.id DESC`
     );
     return result.rows;
@@ -206,13 +242,24 @@ class OrderRepositoryAdapter extends OrderRepositoryPort {
     const result = await pool.query(
       `SELECT 
          p.*,
-         pr.nombre AS producto_nombre,
-         pr.artista,
-         pr.precio AS precio_unitario,
-         pr.imagen_url
+         COALESCE(
+           json_agg(
+             json_build_object(
+               'producto_id', pr.id,
+               'nombre', pr.nombre,
+               'artista', pr.artista,
+               'precio_unitario', pi.precio_unitario,
+               'cantidad', pi.cantidad,
+               'imagen_url', pr.imagen_url
+             )
+           ) FILTER (WHERE pi.id IS NOT NULL), 
+           '[]'
+         ) AS items
        FROM pedidos p
-       JOIN productos pr ON pr.id = p.producto_id
+       LEFT JOIN pedido_items pi ON pi.pedido_id = p.id
+       LEFT JOIN productos pr ON pr.id = pi.producto_id
        WHERE p.usuario_id = $1
+       GROUP BY p.id
        ORDER BY p.id DESC`,
       [usuarioId]
     );
@@ -220,29 +267,56 @@ class OrderRepositoryAdapter extends OrderRepositoryPort {
   }
 
   async findById(id) {
-    const result = await pool.query('SELECT * FROM pedidos WHERE id = $1', [id]);
-    return mapRow(result.rows[0]);
+    const result = await pool.query(
+      `SELECT 
+         p.*,
+         COALESCE(
+           json_agg(
+             json_build_object(
+               'producto_id', pr.id,
+               'nombre', pr.nombre,
+               'artista', pr.artista,
+               'precio_unitario', pi.precio_unitario,
+               'cantidad', pi.cantidad,
+               'imagen_url', pr.imagen_url
+             )
+           ) FILTER (WHERE pi.id IS NOT NULL), 
+           '[]'
+         ) AS items
+       FROM pedidos p
+       LEFT JOIN pedido_items pi ON pi.pedido_id = p.id
+       LEFT JOIN productos pr ON pr.id = pi.producto_id
+       WHERE p.id = $1
+       GROUP BY p.id`,
+      [id]
+    );
+    return result.rows[0];
   }
 
   async findByCreadorProducto(vendedorId) {
     const result = await pool.query(
       `SELECT 
-         p.id,
-         p.cantidad,
-         p.total,
-         p.estado,
-         p.created_at,
-         pr.id AS producto_id,
-         pr.nombre AS producto_nombre,
-         pr.artista,
-         pr.precio AS precio_unitario,
-         pr.imagen_url,
+         p.*,
          u.nombre AS cliente_nombre,
-         u.email AS cliente_email
+         u.email AS cliente_email,
+         COALESCE(
+           json_agg(
+             json_build_object(
+               'producto_id', pr.id,
+               'nombre', pr.nombre,
+               'artista', pr.artista,
+               'precio_unitario', pi.precio_unitario,
+               'cantidad', pi.cantidad,
+               'imagen_url', pr.imagen_url
+             )
+           ) FILTER (WHERE pi.id IS NOT NULL), 
+           '[]'
+         ) AS items
        FROM pedidos p
-       JOIN productos pr ON pr.id = p.producto_id
        LEFT JOIN usuarios u ON u.id = p.usuario_id
-       WHERE pr.creado_por = $1
+       JOIN pedido_items pi ON pi.pedido_id = p.id
+       JOIN productos pr ON pr.id = pi.producto_id AND pr.creado_por = $1
+       GROUP BY p.id, u.id
        ORDER BY p.id DESC`,
       [vendedorId]
     );

@@ -30,11 +30,10 @@ export default function AdminPedidos() {
       render: (p) => p.usuario_nombre || `Usuario #${p.usuario_id}`,
     },
     {
-      key: 'producto_nombre',
-      label: 'Vinilo',
-      render: (p) => `${p.producto_nombre || `Producto #${p.producto_id}`}${p.artista ? ` — ${p.artista}` : ''}`,
+      key: 'productos',
+      label: 'Vinilos',
+      render: (p) => (p.items && p.items.length > 0) ? `${p.items.length} vinilo(s)` : 'Ninguno',
     },
-    { key: 'cantidad', label: 'Cantidad' },
     {
       key: 'total',
       label: 'Total',
@@ -83,19 +82,21 @@ export default function AdminPedidos() {
               <button type="button" className="modal-close" onClick={() => setDetalle(null)}>×</button>
             </div>
             <div className="modal-body">
-              {detalle.imagen_url && (
-                <img
-                  src={`${BASE_URL}${detalle.imagen_url}`}
-                  alt={detalle.producto_nombre}
-                  style={{ width: '100%', maxHeight: 240, objectFit: 'contain', border: 'var(--border-thin)' }}
-                />
-              )}
-
-              <h3 style={{ marginTop: 0 }}>{detalle.producto_nombre}</h3>
-              <p><strong>Artista:</strong> {detalle.artista || '—'}</p>
-              <p><strong>Precio unitario:</strong> ${Number(detalle.precio_unitario || 0).toFixed(2)}</p>
-              <p><strong>Cantidad:</strong> {detalle.cantidad}</p>
-              <p><strong>Total:</strong> <strong>${Number(detalle.total).toFixed(2)}</strong></p>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '16px' }}>
+                {detalle.items && detalle.items.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--paper-2)', paddingBottom: '10px', marginBottom: '10px' }}>
+                    {item.imagen_url && (
+                      <img src={`${BASE_URL}${item.imagen_url}`} alt={item.nombre} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} />
+                    )}
+                    <div>
+                      <p style={{ margin: 0, fontWeight: 'bold' }}>{item.nombre}</p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--brown)' }}>{item.artista || '—'}</p>
+                      <p style={{ margin: 0, fontSize: '0.85rem' }}>{item.cantidad} x ${Number(item.precio_unitario || 0).toFixed(2)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p><strong>Total Pedido:</strong> <strong>${Number(detalle.total).toFixed(2)}</strong></p>
 
               <hr style={{ border: 'none', borderTop: '2px dashed var(--ink)', margin: '12px 0' }} />
 

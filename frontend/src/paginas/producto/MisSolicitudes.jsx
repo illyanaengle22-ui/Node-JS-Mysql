@@ -18,9 +18,9 @@ export default function MisSolicitudes() {
   const columnas = [
     { key: 'id', label: '#' },
     {
-      key: 'producto_nombre',
-      label: 'Vinilo',
-      render: (p) => `${p.producto_nombre}${p.artista ? ` — ${p.artista}` : ''}`,
+      key: 'vinilos',
+      label: 'Vinilos',
+      render: (p) => `${p.items?.length || 0} vinilo(s)`,
     },
     {
       key: 'cliente_nombre',
@@ -42,7 +42,11 @@ export default function MisSolicitudes() {
         </div>
       ),
     },
-    { key: 'cantidad', label: 'Cantidad' },
+    {
+      key: 'cantidad',
+      label: 'Items',
+      render: (p) => p.items?.reduce((acc, i) => acc + i.cantidad, 0) || 0,
+    },
     {
       key: 'total',
       label: 'Total',
@@ -86,18 +90,21 @@ export default function MisSolicitudes() {
               <button type="button" className="modal-close" onClick={() => setDetalle(null)}>×</button>
             </div>
             <div className="modal-body">
-              {detalle.imagen_url && (
-                <img
-                  src={`${BASE_URL}${detalle.imagen_url}`}
-                  alt={detalle.producto_nombre}
-                  style={{ width: '100%', maxHeight: 220, objectFit: 'contain', border: 'var(--border-thin)' }}
-                />
-              )}
-              <p><strong>Vinilo:</strong> {detalle.producto_nombre}</p>
-              <p><strong>Artista:</strong> {detalle.artista}</p>
-              <p><strong>Cantidad:</strong> {detalle.cantidad}</p>
-              <p><strong>Precio unitario:</strong> ${Number(detalle.precio_unitario).toFixed(2)}</p>
-              <p><strong>Total:</strong> <strong>${Number(detalle.total).toFixed(2)}</strong></p>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '16px' }}>
+                {detalle.items && detalle.items.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--paper-2)', paddingBottom: '10px', marginBottom: '10px' }}>
+                    {item.imagen_url && (
+                      <img src={`${BASE_URL}${item.imagen_url}`} alt={item.nombre} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} />
+                    )}
+                    <div>
+                      <p style={{ margin: 0, fontWeight: 'bold' }}>{item.nombre}</p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--brown)' }}>{item.artista || '—'}</p>
+                      <p style={{ margin: 0, fontSize: '0.85rem' }}>{item.cantidad} x ${Number(item.precio_unitario || 0).toFixed(2)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p><strong>Total Pedido:</strong> <strong>${Number(detalle.total).toFixed(2)}</strong></p>
               <hr style={{ border: 'none', borderTop: '2px dashed var(--brown)', margin: '12px 0' }} />
               <p><strong>Cliente:</strong> {detalle.cliente_nombre || 'Usuario desconocido'}</p>
               <p><strong>Email:</strong> {detalle.cliente_email || '—'}</p>

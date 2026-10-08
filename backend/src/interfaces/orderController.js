@@ -10,11 +10,10 @@ class OrderController {
 
   crear = async (req, res) => {
     try {
-      const { productoId, cantidad } = req.body;
+      const { items } = req.body;
       const pedido = await this.orderService.solicitarProducto({
         usuarioId: req.usuario.id,
-        productoId,
-        cantidad,
+        items,
       });
       res.status(201).json({ mensaje: 'Pedido registrado', pedido });
     } catch (err) {

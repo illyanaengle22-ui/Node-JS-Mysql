@@ -5,9 +5,9 @@ class OrderService {
     this.orderRepository = orderRepository;
   }
 
-  async solicitarProducto({ usuarioId, productoId, cantidad = 1 }) {
-    Order.validar({ productoId, usuarioId, cantidad });
-    return this.orderRepository.crearYReservar({ usuarioId, productoId, cantidad });
+  async solicitarProducto({ usuarioId, items }) {
+    Order.validar({ usuarioId, items });
+    return this.orderRepository.crearYReservar({ usuarioId, items });
   }
 
   async aprobarPedido(id) {

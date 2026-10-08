@@ -24,8 +24,8 @@ export default function MisPedidos() {
           <thead>
             <tr>
               <th>#</th>
-              <th>Vinilo</th>
-              <th>Cantidad</th>
+              <th>Vinilos</th>
+              <th>Items</th>
               <th>Total</th>
               <th>Estado</th>
             </tr>
@@ -34,8 +34,8 @@ export default function MisPedidos() {
             {pedidos.map((p) => (
               <tr key={p.id}>
                 <td>{p.id}</td>
-                <td>{p.producto_nombre || p.productoId} {p.artista && `— ${p.artista}`}</td>
-                <td>{p.cantidad}</td>
+                <td>{(p.items || []).map(i => i.nombre).join(', ')}</td>
+                <td>{(p.items || []).reduce((acc, i) => acc + i.cantidad, 0)}</td>
                 <td>${p.total}</td>
                 <td><span className={`badge badge-${p.estado}`}>{p.estado}</span></td>
               </tr>
