@@ -23,11 +23,16 @@ CREATE TABLE IF NOT EXISTS productos (
 CREATE TABLE IF NOT EXISTS pedidos (
   id SERIAL PRIMARY KEY,
   usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
-  producto_id INT REFERENCES productos(id) ON DELETE CASCADE,
-  cantidad INT DEFAULT 1 CHECK (cantidad > 0),
   total NUMERIC(10,2),
   estado VARCHAR(20) DEFAULT 'pendiente',
   created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS pedido_items (
+  id SERIAL PRIMARY KEY,
+  pedido_id INT REFERENCES pedidos(id) ON DELETE CASCADE,
+  producto_id INT REFERENCES productos(id) ON DELETE CASCADE,
+  cantidad INT DEFAULT 1 CHECK (cantidad > 0),
+  precio_unitario NUMERIC(10,2) NOT NULL
 );
 INSERT INTO usuarios (nombre, email, password_hash, rol, estado)
 VALUES ('Admin Vinilos', 'admin@vinilos.com',
