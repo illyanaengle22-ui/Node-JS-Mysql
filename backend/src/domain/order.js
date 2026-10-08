@@ -18,6 +18,15 @@ class Order {
     return true;
   }
 
+  static validarStock(stockDisponible, cantidadSolicitada) {
+    if (stockDisponible !== undefined && stockDisponible !== null) {
+      if (Number(stockDisponible) < Number(cantidadSolicitada)) {
+        throw new Error(`Stock insuficiente. Stock disponible: ${stockDisponible}, solicitado: ${cantidadSolicitada}`);
+      }
+    }
+    return true;
+  }
+
   static calcularTotal(precioUnitario, cantidad) {
     return Number((Number(precioUnitario) * Number(cantidad)).toFixed(2));
   }
