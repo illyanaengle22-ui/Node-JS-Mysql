@@ -3,7 +3,11 @@ class OrderController {
     this.orderService = orderService;
   }
 
-  // Pedido solicta producto
+  _handleError = (res, err) => {
+    const status = err.statusCode || err.status || 400;
+    res.status(status).json({ error: err.message });
+  };
+
   crear = async (req, res) => {
     try {
       const { productoId, cantidad } = req.body;
@@ -14,11 +18,10 @@ class OrderController {
       });
       res.status(201).json({ mensaje: 'Pedido registrado', pedido });
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      this._handleError(res, err);
     }
   };
 
-  // Admin ve todo pedido no
   listar = async (req, res) => {
     try {
       const { rol, id } = req.usuario;
@@ -30,14 +33,16 @@ class OrderController {
       res.status(500).json({ error: err.message });
     }
   };
+
   aprobar = async (req, res) => {
     try {
       await this.orderService.aprobarPedido(req.params.id);
       res.json({ mensaje: 'Pedido aprobado' });
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      this._handleError(res, err);
     }
   };
+
   misSolicitudes = async (req, res) => {
     try {
       const pedidos = await this.orderService.listarSolicitudesDeMisProductos(req.usuario.id);
@@ -52,7 +57,7 @@ class OrderController {
       await this.orderService.rechazarPedido(req.params.id);
       res.json({ mensaje: 'Pedido rechazado' });
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      this._handleError(res, err);
     }
   };
 
@@ -61,7 +66,7 @@ class OrderController {
       await this.orderService.eliminarPedido(req.params.id);
       res.json({ mensaje: 'Pedido eliminado' });
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      this._handleError(res, err);
     }
   };
 }

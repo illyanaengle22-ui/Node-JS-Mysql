@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS productos (
   descripcion TEXT,
   precio NUMERIC(10,2) NOT NULL CHECK (precio > 0),
   imagen_url VARCHAR(255),
-  stock INT DEFAULT 0 CHECK (stock >= 0),
+  stock INT DEFAULT 0 CONSTRAINT stock_no_negativo CHECK (stock >= 0),
   estado VARCHAR(20) DEFAULT 'pendiente',
   creado_por INT REFERENCES usuarios(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW()

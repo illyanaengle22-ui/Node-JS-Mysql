@@ -27,7 +27,7 @@ const orderRepository = new OrderRepositoryAdapter();
 
 const userService = new UserService(userRepository);
 const productService = new ProductService(productRepository);
-const orderService = new OrderService(orderRepository, productRepository);
+const orderService = new OrderService(orderRepository);
 
 const userController = new UserController(userService);
 const productController = new ProductController(productService);

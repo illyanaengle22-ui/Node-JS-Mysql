@@ -3,26 +3,53 @@ class Order {
     this.id = id;
     this.usuarioId = usuarioId;
     this.productoId = productoId;
-    this.cantidad = cantidad;
+    this.cantidad = Number(cantidad);
     this.total = total;
     this.estado = estado;
     this.createdAt = createdAt;
   }
 
-  static validar({ productoId, usuarioId, cantidad }) {
-    if (!productoId) throw new Error('productoId es obligatorio');
-    if (!usuarioId) throw new Error('usuarioId es obligatorio');
-    if (cantidad !== undefined && (Number.isNaN(Number(cantidad)) || Number(cantidad) <= 0)) {
-      throw new Error('La cantidad debe ser mayor a 0');
+  static validarCantidad(cantidad) {
+    const num = Number(cantidad);
+    if (!Number.isInteger(num) || num <= 0) {
+      const err = new Error('La cantidad debe ser un número entero mayor a 0');
+      err.statusCode = 400;
+      throw err;
     }
+    return num;
+  }
+
+  static validar({ productoId, usuarioId, cantidad }) {
+    if (!productoId) {
+      const err = new Error('productoId es obligatorio');
+      err.statusCode = 400;
+      throw err;
+    }
+    if (!usuarioId) {
+      const err = new Error('usuarioId es obligatorio');
+      err.statusCode = 400;
+      throw err;
+    }
+    Order.validarCantidad(cantidad);
     return true;
   }
 
   static validarStock(stockDisponible, cantidadSolicitada) {
     if (stockDisponible !== undefined && stockDisponible !== null) {
       if (Number(stockDisponible) < Number(cantidadSolicitada)) {
-        throw new Error(`Stock insuficiente. Stock disponible: ${stockDisponible}, solicitado: ${cantidadSolicitada}`);
+        const err = new Error(`Stock insuficiente para realizar el pedido. Stock disponible: ${stockDisponible}, solicitado: ${cantidadSolicitada}`);
+        err.statusCode = 400;
+        throw err;
       }
+    }
+    return true;
+  }
+
+  static puedeCambiarEstado(estadoActual) {
+    if (estadoActual !== 'pendiente') {
+      const err = new Error(`El pedido ya fue procesado (estado actual: '${estadoActual}'). Solo se pueden procesar pedidos en estado 'pendiente'`);
+      err.statusCode = 409;
+      throw err;
     }
     return true;
   }
