@@ -47747,11 +47747,17 @@ var require_orderRepositoryPort = __commonJS({
 var require_order = __commonJS({
   "src/domain/order.js"(exports2, module2) {
     var Order = class _Order {
-      constructor({ id, usuarioId, productoId, cantidad = 1, total, estado = "pendiente", createdAt }) {
+      constructor({ id, usuarioId, items = [], total, estado = "pendiente", createdAt }) {
         this.id = id;
         this.usuarioId = usuarioId;
-        this.productoId = productoId;
-        this.cantidad = Number(cantidad);
+        this.items = items.map((item) => ({
+          productoId: item.productoId || item.producto_id,
+          cantidad: Number(item.cantidad),
+          precioUnitario: item.precioUnitario ? Number(item.precioUnitario) : null,
+          nombre: item.nombre,
+          artista: item.artista,
+          imagenUrl: item.imagenUrl || item.imagen_url
+        }));
         this.total = total;
         this.estado = estado;
         this.createdAt = createdAt;
@@ -47765,18 +47771,25 @@ var require_order = __commonJS({
         }
         return num;
       }
-      static validar({ productoId, usuarioId, cantidad }) {
-        if (!productoId) {
-          const err = new Error("productoId es obligatorio");
-          err.statusCode = 400;
-          throw err;
-        }
+      static validar({ usuarioId, items }) {
         if (!usuarioId) {
           const err = new Error("usuarioId es obligatorio");
           err.statusCode = 400;
           throw err;
         }
-        _Order.validarCantidad(cantidad);
+        if (!Array.isArray(items) || items.length === 0) {
+          const err = new Error("El pedido debe tener al menos un producto");
+          err.statusCode = 400;
+          throw err;
+        }
+        for (const item of items) {
+          if (!item.productoId) {
+            const err = new Error("productoId es obligatorio en cada item");
+            err.statusCode = 400;
+            throw err;
+          }
+          _Order.validarCantidad(item.cantidad);
+        }
         return true;
       }
       static validarStock(stockDisponible, cantidadSolicitada) {
@@ -47811,60 +47824,66 @@ var require_orderRepositoryAdapter = __commonJS({
     var pool = require_db3();
     var OrderRepositoryPort = require_orderRepositoryPort();
     var Order = require_order();
-    function mapRow(row) {
-      if (!row) return null;
-      return new Order({
-        id: row.id,
-        usuarioId: row.usuario_id,
-        productoId: row.producto_id,
-        cantidad: row.cantidad,
-        total: row.total !== null ? Number(row.total) : null,
-        estado: row.estado,
-        createdAt: row.created_at
-      });
-    }
     var OrderRepositoryAdapter2 = class extends OrderRepositoryPort {
       /**
        * Reserva stock de forma atómica e inserta el pedido con estado 'pendiente'.
        * Ejecutado dentro de una transacción PostgreSQL.
        */
-      async crearYReservar({ usuarioId, productoId, cantidad }) {
+      async crearYReservar({ usuarioId, items }) {
         const client = await pool.connect();
         try {
           await client.query("BEGIN");
-          const resStock = await client.query(
-            `UPDATE productos
-            SET stock = stock - $1
-          WHERE id = $2 AND stock >= $1 AND estado = 'aprobado'
-         RETURNING id, precio, stock`,
-            [cantidad, productoId]
-          );
-          if (resStock.rowCount === 0) {
-            const resProd = await client.query("SELECT * FROM productos WHERE id = $1", [productoId]);
-            if (resProd.rowCount === 0) {
-              const err2 = new Error("Producto no encontrado");
-              err2.statusCode = 404;
-              throw err2;
+          let totalPedido = 0;
+          const procesados = [];
+          for (const item of items) {
+            const resStock = await client.query(
+              `UPDATE productos
+              SET stock = stock - $1
+            WHERE id = $2 AND stock >= $1 AND estado = 'aprobado'
+           RETURNING id, precio, stock, nombre`,
+              [item.cantidad, item.productoId]
+            );
+            if (resStock.rowCount === 0) {
+              const resProd = await client.query("SELECT * FROM productos WHERE id = $1", [item.productoId]);
+              if (resProd.rowCount === 0) {
+                const err2 = new Error(`Producto no encontrado (ID: ${item.productoId})`);
+                err2.statusCode = 404;
+                throw err2;
+              }
+              const prod = resProd.rows[0];
+              if (prod.estado !== "aprobado") {
+                const err2 = new Error(`El producto "${prod.nombre}" todav\xEDa no est\xE1 disponible en el cat\xE1logo`);
+                err2.statusCode = 400;
+                throw err2;
+              }
+              const err = new Error(`Stock insuficiente para "${prod.nombre}". Stock disponible: ${prod.stock}, solicitado: ${item.cantidad}`);
+              err.statusCode = 400;
+              throw err;
             }
-            const prod = resProd.rows[0];
-            if (prod.estado !== "aprobado") {
-              const err2 = new Error("Este producto todav\xEDa no est\xE1 disponible en el cat\xE1logo");
-              err2.statusCode = 400;
-              throw err2;
-            }
-            const err = new Error(`Stock insuficiente para realizar el pedido. Stock disponible: ${prod.stock}, solicitado: ${cantidad}`);
-            err.statusCode = 400;
-            throw err;
+            const producto = resStock.rows[0];
+            const subtotal = Order.calcularTotal(producto.precio, item.cantidad);
+            totalPedido += subtotal;
+            procesados.push({
+              productoId: item.productoId,
+              cantidad: item.cantidad,
+              precioUnitario: producto.precio
+            });
           }
-          const producto = resStock.rows[0];
-          const total = Order.calcularTotal(producto.precio, cantidad);
           const resPedido = await client.query(
-            `INSERT INTO pedidos (usuario_id, producto_id, cantidad, total, estado)
-         VALUES ($1, $2, $3, $4, 'pendiente') RETURNING *`,
-            [usuarioId, productoId, cantidad, total]
+            `INSERT INTO pedidos (usuario_id, total, estado)
+         VALUES ($1, $2, 'pendiente') RETURNING *`,
+            [usuarioId, totalPedido]
           );
+          const pedido = resPedido.rows[0];
+          for (const proc of procesados) {
+            await client.query(
+              `INSERT INTO pedido_items (pedido_id, producto_id, cantidad, precio_unitario)
+           VALUES ($1, $2, $3, $4)`,
+              [pedido.id, proc.productoId, proc.cantidad, proc.precioUnitario]
+            );
+          }
           await client.query("COMMIT");
-          return mapRow(resPedido.rows[0]);
+          return this.findById(pedido.id);
         } catch (err) {
           await client.query("ROLLBACK");
           throw err;
@@ -47892,7 +47911,7 @@ var require_orderRepositoryAdapter = __commonJS({
             [id]
           );
           await client.query("COMMIT");
-          return mapRow(resUpdate.rows[0]);
+          return this.findById(id);
         } catch (err) {
           await client.query("ROLLBACK");
           throw err;
@@ -47919,10 +47938,13 @@ var require_orderRepositoryAdapter = __commonJS({
             `UPDATE pedidos SET estado = 'rechazado' WHERE id = $1 AND estado = 'pendiente'`,
             [id]
           );
-          await client.query(
-            `UPDATE productos SET stock = stock + $1 WHERE id = $2`,
-            [pedidoActual.cantidad, pedidoActual.producto_id]
-          );
+          const itemsRes = await client.query("SELECT producto_id, cantidad FROM pedido_items WHERE pedido_id = $1", [id]);
+          for (const item of itemsRes.rows) {
+            await client.query(
+              `UPDATE productos SET stock = stock + $1 WHERE id = $2`,
+              [item.cantidad, item.producto_id]
+            );
+          }
           await client.query("COMMIT");
           return true;
         } catch (err) {
@@ -47948,10 +47970,13 @@ var require_orderRepositoryAdapter = __commonJS({
           }
           const pedidoActual = resCheck.rows[0];
           if (pedidoActual.estado === "pendiente") {
-            await client.query(
-              `UPDATE productos SET stock = stock + $1 WHERE id = $2`,
-              [pedidoActual.cantidad, pedidoActual.producto_id]
-            );
+            const itemsRes = await client.query("SELECT producto_id, cantidad FROM pedido_items WHERE pedido_id = $1", [id]);
+            for (const item of itemsRes.rows) {
+              await client.query(
+                `UPDATE productos SET stock = stock + $1 WHERE id = $2`,
+                [item.cantidad, item.producto_id]
+              );
+            }
           }
           await client.query("DELETE FROM pedidos WHERE id = $1", [id]);
           await client.query("COMMIT");
@@ -47967,15 +47992,26 @@ var require_orderRepositoryAdapter = __commonJS({
         const result = await pool.query(
           `SELECT 
          p.*,
-         pr.nombre AS producto_nombre,
-         pr.artista,
-         pr.precio AS precio_unitario,
-         pr.imagen_url,
          u.nombre AS usuario_nombre,
-         u.email AS usuario_email
+         u.email AS usuario_email,
+         COALESCE(
+           json_agg(
+             json_build_object(
+               'producto_id', pr.id,
+               'nombre', pr.nombre,
+               'artista', pr.artista,
+               'precio_unitario', pi.precio_unitario,
+               'cantidad', pi.cantidad,
+               'imagen_url', pr.imagen_url
+             )
+           ) FILTER (WHERE pi.id IS NOT NULL), 
+           '[]'
+         ) AS items
        FROM pedidos p
-       JOIN productos pr ON pr.id = p.producto_id
        LEFT JOIN usuarios u ON u.id = p.usuario_id
+       LEFT JOIN pedido_items pi ON pi.pedido_id = p.id
+       LEFT JOIN productos pr ON pr.id = pi.producto_id
+       GROUP BY p.id, u.id
        ORDER BY p.id DESC`
         );
         return result.rows;
@@ -47984,41 +48020,79 @@ var require_orderRepositoryAdapter = __commonJS({
         const result = await pool.query(
           `SELECT 
          p.*,
-         pr.nombre AS producto_nombre,
-         pr.artista,
-         pr.precio AS precio_unitario,
-         pr.imagen_url
+         COALESCE(
+           json_agg(
+             json_build_object(
+               'producto_id', pr.id,
+               'nombre', pr.nombre,
+               'artista', pr.artista,
+               'precio_unitario', pi.precio_unitario,
+               'cantidad', pi.cantidad,
+               'imagen_url', pr.imagen_url
+             )
+           ) FILTER (WHERE pi.id IS NOT NULL), 
+           '[]'
+         ) AS items
        FROM pedidos p
-       JOIN productos pr ON pr.id = p.producto_id
+       LEFT JOIN pedido_items pi ON pi.pedido_id = p.id
+       LEFT JOIN productos pr ON pr.id = pi.producto_id
        WHERE p.usuario_id = $1
+       GROUP BY p.id
        ORDER BY p.id DESC`,
           [usuarioId]
         );
         return result.rows;
       }
       async findById(id) {
-        const result = await pool.query("SELECT * FROM pedidos WHERE id = $1", [id]);
-        return mapRow(result.rows[0]);
+        const result = await pool.query(
+          `SELECT 
+         p.*,
+         COALESCE(
+           json_agg(
+             json_build_object(
+               'producto_id', pr.id,
+               'nombre', pr.nombre,
+               'artista', pr.artista,
+               'precio_unitario', pi.precio_unitario,
+               'cantidad', pi.cantidad,
+               'imagen_url', pr.imagen_url
+             )
+           ) FILTER (WHERE pi.id IS NOT NULL), 
+           '[]'
+         ) AS items
+       FROM pedidos p
+       LEFT JOIN pedido_items pi ON pi.pedido_id = p.id
+       LEFT JOIN productos pr ON pr.id = pi.producto_id
+       WHERE p.id = $1
+       GROUP BY p.id`,
+          [id]
+        );
+        return result.rows[0];
       }
       async findByCreadorProducto(vendedorId) {
         const result = await pool.query(
           `SELECT 
-         p.id,
-         p.cantidad,
-         p.total,
-         p.estado,
-         p.created_at,
-         pr.id AS producto_id,
-         pr.nombre AS producto_nombre,
-         pr.artista,
-         pr.precio AS precio_unitario,
-         pr.imagen_url,
+         p.*,
          u.nombre AS cliente_nombre,
-         u.email AS cliente_email
+         u.email AS cliente_email,
+         COALESCE(
+           json_agg(
+             json_build_object(
+               'producto_id', pr.id,
+               'nombre', pr.nombre,
+               'artista', pr.artista,
+               'precio_unitario', pi.precio_unitario,
+               'cantidad', pi.cantidad,
+               'imagen_url', pr.imagen_url
+             )
+           ) FILTER (WHERE pi.id IS NOT NULL), 
+           '[]'
+         ) AS items
        FROM pedidos p
-       JOIN productos pr ON pr.id = p.producto_id
        LEFT JOIN usuarios u ON u.id = p.usuario_id
-       WHERE pr.creado_por = $1
+       JOIN pedido_items pi ON pi.pedido_id = p.id
+       JOIN productos pr ON pr.id = pi.producto_id AND pr.creado_por = $1
+       GROUP BY p.id, u.id
        ORDER BY p.id DESC`,
           [vendedorId]
         );
@@ -49991,9 +50065,9 @@ var require_orderService = __commonJS({
       constructor(orderRepository2) {
         this.orderRepository = orderRepository2;
       }
-      async solicitarProducto({ usuarioId, productoId, cantidad = 1 }) {
-        Order.validar({ productoId, usuarioId, cantidad });
-        return this.orderRepository.crearYReservar({ usuarioId, productoId, cantidad });
+      async solicitarProducto({ usuarioId, items }) {
+        Order.validar({ usuarioId, items });
+        return this.orderRepository.crearYReservar({ usuarioId, items });
       }
       async aprobarPedido(id) {
         return this.orderRepository.aprobar(id);
@@ -50268,11 +50342,10 @@ var require_orderController = __commonJS({
       };
       crear = async (req, res) => {
         try {
-          const { productoId, cantidad } = req.body;
+          const { items } = req.body;
           const pedido = await this.orderService.solicitarProducto({
             usuarioId: req.usuario.id,
-            productoId,
-            cantidad
+            items
           });
           res.status(201).json({ mensaje: "Pedido registrado", pedido });
         } catch (err) {
