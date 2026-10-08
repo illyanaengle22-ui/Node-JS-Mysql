@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import ViniloCard from '../components/ViniloCard';
 import ViniloDetailModal from '../components/ViniloDetailModal';
 
 export default function Catalogo() {
   const { auth } = useAuth();
+  const { addToCart } = useCart();
   const [vinilos, setVinilos] = useState([]);
   const [mensaje, setMensaje] = useState('');
   const [detalle, setDetalle] = useState(null);
@@ -37,18 +39,11 @@ export default function Catalogo() {
     setCantidad(1);
   };
 
-  const confirmarSolicitud = async () => {
-    try {
-      await api.crearPedido({
-        productoId: solicitando.id,
-        cantidad: Number(cantidad),
-      });
-      setMensaje(`Pedido enviado: ${solicitando.nombre} x${cantidad}`);
-      setSolicitando(null);
-      cargar();
-    } catch (err) {
-      setMensaje(err.message);
-    }
+  const confirmarSolicitud = () => {
+    addToCart(solicitando, cantidad);
+    setMensaje(`Añadido al carrito: ${solicitando.nombre} x${cantidad}`);
+    setSolicitando(null);
+    setTimeout(() => setMensaje(''), 3000);
   };
 
   return (

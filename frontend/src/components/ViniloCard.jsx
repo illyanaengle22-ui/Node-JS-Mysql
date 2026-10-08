@@ -32,7 +32,7 @@ export default function ViniloCard({ vinilo, onVer, onSolicitar, mostrarSolicita
             onClick={() => onSolicitar?.(vinilo)}
             disabled={stock <= 0}
           >
-            {stock > 0 ? 'Solicitar' : 'Sin stock'}
+            {stock > 0 ? '🛒 Añadir' : 'Sin stock'}
           </button>
         )}
       </div>
