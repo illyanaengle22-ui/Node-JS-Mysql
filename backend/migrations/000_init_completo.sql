@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS productos (
   creado_por INT REFERENCES usuarios(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_productos_estado ON productos(estado);
+CREATE INDEX IF NOT EXISTS idx_productos_creado_por ON productos(creado_por);
 CREATE TABLE IF NOT EXISTS pedidos (
   id SERIAL PRIMARY KEY,
   usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -28,6 +30,8 @@ CREATE TABLE IF NOT EXISTS pedidos (
   comprobante_url VARCHAR(255),
   created_at TIMESTAMP DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_pedidos_usuario ON pedidos(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_pedidos_estado ON pedidos(estado);
 CREATE TABLE IF NOT EXISTS pedido_items (
   id SERIAL PRIMARY KEY,
   pedido_id INT REFERENCES pedidos(id) ON DELETE CASCADE,

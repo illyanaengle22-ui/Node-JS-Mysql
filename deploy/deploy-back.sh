@@ -6,6 +6,9 @@ DB_IP=$1
 [ -z "$DB_IP" ] && { echo "Falta IP de la BD"; exit 1; }
 : "${DB_PASSWORD:?Falta DB_PASSWORD}"
 : "${JWT_SECRET:?Falta JWT_SECRET}"
+: "${SMTP_USER:?Falta SMTP_USER}"
+: "${SMTP_PASS:?Falta SMTP_PASS}"
+: "${ADMIN_EMAIL:?Falta ADMIN_EMAIL}"
 
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
@@ -22,6 +25,11 @@ DB_USER=app
 DB_PASSWORD=$DB_PASSWORD
 DB_NAME=practica_api
 JWT_SECRET=$JWT_SECRET
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=$SMTP_USER
+SMTP_PASS=$SMTP_PASS
+ADMIN_EMAIL=$ADMIN_EMAIL
 EOF
 
 mkdir -p src/uploads
