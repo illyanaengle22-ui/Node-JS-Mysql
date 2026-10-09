@@ -11,6 +11,9 @@ import AdminProductos from './admin/AdminProductos';
 import AdminPendientes from './admin/AdminPendientes';
 import AdminPedidos from './admin/AdminPedidos';
 
+// Pedido
+import MisPedidos from './pedido/MisPedidos';
+
 // Producto
 import MisVinilos from './producto/MisVinilos';
 import MisPendientes from './producto/MisPendientes';
@@ -40,6 +43,10 @@ export default function Dashboard() {
             <Route path="pendientes"   element={<MisPendientes />} />
             <Route path="solicitudes"  element={<MisSolicitudes />} />
         </>
+        )}
+
+        {rol === 'pedido' && (
+          <Route path="mis-pedidos" element={<MisPedidos />} />
         )}
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

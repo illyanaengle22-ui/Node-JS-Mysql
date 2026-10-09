@@ -60,7 +60,7 @@ export default function MisSolicitudes() {
     {
       key: 'created_at',
       label: 'Fecha',
-      render: (p) => p.created_at ? new Date(p.created_at).toLocaleDateString('es-MX') : '—',
+      render: (p) => (p.createdAt ?? p.created_at) ? new Date(p.createdAt ?? p.created_at).toLocaleDateString('es-MX') : '—',
     },
   ];
 
@@ -108,7 +108,7 @@ export default function MisSolicitudes() {
               <hr style={{ border: 'none', borderTop: '2px dashed var(--brown)', margin: '12px 0' }} />
               <p><strong>Cliente:</strong> {detalle.cliente_nombre || 'Usuario desconocido'}</p>
               <p><strong>Email:</strong> {detalle.cliente_email || '—'}</p>
-              <p><strong>Fecha:</strong> {detalle.created_at ? new Date(detalle.created_at).toLocaleString('es-MX') : '—'}</p>
+              <p><strong>Fecha:</strong> {(detalle.createdAt ?? detalle.created_at) ? new Date(detalle.createdAt ?? detalle.created_at).toLocaleString('es-MX') : '—'}</p>
               <p><strong>Estado:</strong> <span className={`badge-estado ${detalle.estado}`}>{detalle.estado}</span></p>
               <div className="modal-footer">
                 <button type="button" onClick={() => setDetalle(null)}>Cerrar</button>

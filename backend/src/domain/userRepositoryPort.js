@@ -8,6 +8,7 @@ class UserRepositoryPort {
   async updateByEmail(email, data) { throw new Error('No implementado'); }
   async asignarRol(id, rol, estado) { throw new Error('No implementado'); }
   async deleteById(id) { throw new Error('No implementado'); }
+  async findByRol(rol) { throw new Error('No implementado'); }
 }
 
 module.exports = UserRepositoryPort;

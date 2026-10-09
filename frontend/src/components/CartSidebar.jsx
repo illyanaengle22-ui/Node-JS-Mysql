@@ -64,13 +64,13 @@ export default function CartSidebar({ isOpen, onClose }) {
                       Cant: {item.cantidad} x ${item.producto.precio}
                     </span>
                   </div>
-                  <button 
-                    className="remove-btn" 
-                    onClick={() => removeFromCart(item.producto.id)}
-                    title="Eliminar"
-                  >
-                    🗑️
-                  </button>
+                    <button 
+                      className="remove-btn" 
+                      onClick={() => removeFromCart(item.producto.id)}
+                      title="Eliminar"
+                    >
+                      <i className="fa-solid fa-trash-can"></i>
+                    </button>
                 </li>
               ))}
             </ul>

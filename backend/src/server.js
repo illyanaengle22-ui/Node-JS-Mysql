@@ -10,6 +10,7 @@ const { obtenerCaptcha } = require('./interfaces/captchaController');
 const UserRepositoryAdapter = require('./infrastructure/userRepositoryAdapter');
 const ProductRepositoryAdapter = require('./infrastructure/productRepositoryAdapter');
 const OrderRepositoryAdapter = require('./infrastructure/orderRepositoryAdapter');
+const EmailNotificationAdapter = require('./infrastructure/emailNotificationAdapter');
 
 //Servicios (aplicación)
 const UserService = require('./application/userService');
@@ -24,10 +25,11 @@ const OrderController = require('./interfaces/orderController');
 const userRepository = new UserRepositoryAdapter();
 const productRepository = new ProductRepositoryAdapter();
 const orderRepository = new OrderRepositoryAdapter();
+const emailNotification = new EmailNotificationAdapter();
 
 const userService = new UserService(userRepository);
 const productService = new ProductService(productRepository);
-const orderService = new OrderService(orderRepository);
+const orderService = new OrderService(orderRepository, productRepository, userRepository, emailNotification);
 
 const userController = new UserController(userService);
 const productController = new ProductController(productService);
@@ -80,8 +82,10 @@ app.delete('/productos/:id', autenticar, soloRol('admin', 'producto'), productCo
 
 //  Pedidos  
 app.post('/pedidos', autenticar, soloRol('pedido'), orderController.crear);
+app.put('/pedidos/:id/comprobante', autenticar, soloRol('pedido'), upload.single('comprobante'), orderController.subirComprobante);
 app.get('/pedidos', autenticar, soloRol('admin', 'pedido'), orderController.listar);
 app.get('/pedidos/mis-solicitudes', autenticar, soloRol('producto'), orderController.misSolicitudes);
+app.get('/pedidos/:id', autenticar, soloRol('admin', 'pedido'), orderController.obtenerById);
 app.put('/pedidos/:id/aprobar',  autenticar, soloRol('admin'), orderController.aprobar);
 app.put('/pedidos/:id/rechazar', autenticar, soloRol('admin'), orderController.rechazar);
 app.delete('/pedidos/:id', autenticar, soloRol('admin'), orderController.eliminar);

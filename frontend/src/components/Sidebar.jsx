@@ -18,8 +18,9 @@ const MENUS = {
     { to: '/dashboard/solicitudes', label: 'Solicitudes',  fa: 'fa-receipt' },
     ],
   pedido: [
-    { to: '/dashboard',          label: 'Home',     fa: 'fa-house-tsunami', end: true },
-    { to: '/dashboard/catalogo', label: 'Catálogo', fa: 'fa-compact-disc' },
+    { to: '/dashboard',          label: 'Home',        fa: 'fa-house-tsunami', end: true },
+    { to: '/dashboard/catalogo', label: 'Catálogo',    fa: 'fa-compact-disc' },
+    { to: '/dashboard/mis-pedidos', label: 'Mis Pedidos', fa: 'fa-box-open' },
   ],
 };
 

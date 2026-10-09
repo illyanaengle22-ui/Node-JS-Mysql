@@ -38,7 +38,7 @@ El proyecto sigue el patrón **Hexagonal (Ports & Adapters)**
                     │                                             │
                     │  Puertos (interfaces):                      │
                     │  UserRepositoryPort  ProductRepositoryPort  │
-                    │  OrderRepositoryPort                        │
+                    │  OrderRepositoryPort NotificationPort       │
                     │                                             │
                     │  ⚠ No conoce nada externo                   │
                     │  (ni pg, ni express, ni bcrypt)             │
@@ -53,6 +53,7 @@ El proyecto sigue el patrón **Hexagonal (Ports & Adapters)**
                     │  userRepositoryAdapter                      │
                     │  productRepositoryAdapter                   │
                     │  orderRepositoryAdapter                     │
+                    │  emailNotificationAdapter  ← nodemailer     │
                     │  captchaAdapter            ← svg-captcha    │
                     │  captchaStore              ← memoria        │
                     │  uploadAdapter             ← multer         │
@@ -76,7 +77,8 @@ backend/src/
 │   ├── order.js                         # Entidad Pedido
 │   ├── userRepositoryPort.js            # Contrato de persistencia
 │   ├── productRepositoryPort.js         # Contrato de persistencia
-│   └── orderRepositoryPort.js           # Contrato de persistencia
+│   ├── orderRepositoryPort.js           # Contrato de persistencia
+│   └── notificationPort.js              # Contrato de notificaciones
 │
 ├── application/                         # Casos de uso
 │   ├── userService.js
@@ -88,6 +90,7 @@ backend/src/
 │   ├── userRepositoryAdapter.js
 │   ├── productRepositoryAdapter.js
 │   ├── orderRepositoryAdapter.js
+│   ├── emailNotificationAdapter.js      # Nodemailer
 │   ├── captchaAdapter.js                # Genera el SVG
 │   ├── captchaStore.js                  # Guarda texto por ID
 │   └── uploadAdapter.js                 # Configura multer

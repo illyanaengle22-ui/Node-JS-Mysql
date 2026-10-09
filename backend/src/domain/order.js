@@ -2,14 +2,19 @@ class Order {
   constructor({ id, usuarioId, items = [], total, estado = 'pendiente', createdAt }) {
     this.id = id;
     this.usuarioId = usuarioId;
-    this.items = items.map(item => ({
-      productoId: item.productoId || item.producto_id,
-      cantidad: Number(item.cantidad),
-      precioUnitario: item.precioUnitario ? Number(item.precioUnitario) : null,
-      nombre: item.nombre,
-      artista: item.artista,
-      imagenUrl: item.imagenUrl || item.imagen_url
-    }));
+    this.items = items.map(item => {
+      const cantidad = Number(item.cantidad);
+      const precioUnitario = Number(item.precioUnitario ?? item.precio_unitario);
+      return {
+        productoId: item.productoId ?? item.producto_id,
+        nombre: item.nombre,
+        artista: item.artista,
+        imagenUrl: item.imagenUrl ?? item.imagen_url,
+        cantidad,
+        precioUnitario,
+        subtotal: Number((cantidad * precioUnitario).toFixed(2)),
+      };
+    });
     this.total = total;
     this.estado = estado;
     this.createdAt = createdAt;
@@ -58,9 +63,24 @@ class Order {
     return true;
   }
 
-  static puedeCambiarEstado(estadoActual) {
-    if (estadoActual !== 'pendiente') {
-      const err = new Error(`El pedido ya fue procesado (estado actual: '${estadoActual}'). Solo se pueden procesar pedidos en estado 'pendiente'`);
+  static puedeCambiarEstado(estadoActual, accion) {
+    if (accion === 'subir_comprobante' && !['pendiente_pago', 'verificando_pago'].includes(estadoActual)) {
+      const err = new Error('Solo se pueden subir comprobantes a pedidos en estado pendiente de pago o verificando pago');
+      err.statusCode = 409;
+      throw err;
+    }
+    if (accion === 'validar_pago' && estadoActual !== 'verificando_pago') {
+      const err = new Error('El pedido no está en espera de validación de pago');
+      err.statusCode = 409;
+      throw err;
+    }
+    if (accion === 'autorizar_envio' && estadoActual !== 'pagado') {
+      const err = new Error('El pedido debe estar pagado y validado antes de enviarlo');
+      err.statusCode = 409;
+      throw err;
+    }
+    if (accion === 'rechazar' && ['en_envio', 'rechazado'].includes(estadoActual)) {
+      const err = new Error(`El pedido no puede ser rechazado en estado '${estadoActual}'`);
       err.statusCode = 409;
       throw err;
     }

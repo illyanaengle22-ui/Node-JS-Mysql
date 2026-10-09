@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS pedidos (
   id SERIAL PRIMARY KEY,
   usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
   total NUMERIC(10,2),
-  estado VARCHAR(20) DEFAULT 'pendiente',
+  estado VARCHAR(20) DEFAULT 'pendiente_pago',
+  comprobante_url VARCHAR(255),
   created_at TIMESTAMP DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS pedido_items (

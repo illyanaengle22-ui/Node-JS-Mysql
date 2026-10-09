@@ -146,6 +146,9 @@ export const api = {
   listarPedidos: () =>
     fetch(`${BASE_URL}/pedidos`, { headers: authHeaders() }).then(manejarRespuesta),
 
+  obtenerPedido: (id) =>
+    fetch(`${BASE_URL}/pedidos/${id}`, { headers: authHeaders() }).then(manejarRespuesta),
+
   aprobarPedido: (id) =>
     fetch(`${BASE_URL}/pedidos/${id}/aprobar`, {
       method: 'PUT',
@@ -163,6 +166,16 @@ export const api = {
       method: 'DELETE',
       headers: authHeaders(),
     }).then(manejarRespuesta),
+
+  subirComprobante: (id, file) => {
+    const formData = new FormData();
+    formData.append('comprobante', file);
+    return fetch(`${BASE_URL}/pedidos/${id}/comprobante`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: formData,
+    }).then(manejarRespuesta);
+  },
 };
 
 export { BASE_URL };

@@ -20,12 +20,12 @@ export default function Topbar() {
       <header className="dash-topbar">
         <h1>Tienda de vinilos</h1>
         <div className="user-info">
-          {auth?.rol === 'pedido' && (
-            <button className="cart-icon-btn" onClick={() => setIsCartOpen(true)}>
-              🛒
-              {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
-            </button>
-          )}
+            {auth?.rol === 'pedido' && (
+              <button className="cart-icon-btn" onClick={() => setIsCartOpen(true)}>
+                <i className="fa-solid fa-cart-shopping"></i>
+                {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+              </button>
+            )}
           <span>Hola, {auth?.nombre}</span>
           <span className="role-badge">{auth?.rol}</span>
           <button className="btn-ghost" onClick={salir}>Salir</button>

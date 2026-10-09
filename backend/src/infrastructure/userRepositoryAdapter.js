@@ -93,6 +93,20 @@ class UserRepositoryAdapter extends UserRepositoryPort {
     const result = await pool.query('DELETE FROM usuarios WHERE id = $1 RETURNING id', [id]);
     return result.rowCount > 0;
   }
+
+  async findByRol(rol) {
+    const result = await pool.query(
+      "SELECT id, nombre, email FROM usuarios WHERE rol = $1 AND estado = 'activo'",
+      [rol]
+    );
+    return result.rows.map(row => new User({
+      id: row.id,
+      nombre: row.nombre,
+      email: row.email,
+      rol: row.rol,
+      estado: row.estado
+    }));
+  }
 }
 
 module.exports = UserRepositoryAdapter;

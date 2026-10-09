@@ -13,9 +13,24 @@ class OrderController {
       const { items } = req.body;
       const pedido = await this.orderService.solicitarProducto({
         usuarioId: req.usuario.id,
+        clienteInfo: { email: req.usuario.email, nombre: req.usuario.email.split('@')[0] }, // si req.usuario no tiene nombre, usamos parte del email
         items,
       });
       res.status(201).json({ mensaje: 'Pedido registrado', pedido });
+    } catch (err) {
+      this._handleError(res, err);
+    }
+  };
+
+  subirComprobante = async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'Debes subir una imagen de comprobante' });
+      }
+      const { rutaPublica } = require('../infrastructure/uploadAdapter');
+      const url = rutaPublica(req.file.filename);
+      await this.orderService.subirComprobante(req.params.id, req.usuario.id, url);
+      res.json({ mensaje: 'Comprobante subido exitosamente', comprobante_url: url });
     } catch (err) {
       this._handleError(res, err);
     }
@@ -30,6 +45,16 @@ class OrderController {
       res.json(pedidos);
     } catch (err) {
       res.status(500).json({ error: err.message });
+    }
+  };
+
+  obtenerById = async (req, res) => {
+    try {
+      const pedido = await this.orderService.obtenerPorId(req.params.id);
+      if (!pedido) return res.status(404).json({ error: 'Pedido no encontrado' });
+      res.json(pedido);
+    } catch (err) {
+      this._handleError(res, err);
     }
   };
 
