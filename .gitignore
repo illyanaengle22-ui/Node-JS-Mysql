@@ -1,3 +1,7 @@
 node_modules/
 .env
 backend/src/uploads/*
+backend/add_column*.js
+backend/check_*
+backend/test_*
+estructura.txt
