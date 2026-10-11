@@ -17,11 +17,16 @@ export default function FormModal({
   const modalRef = useRef(null);
   const previousActiveElement = useRef(null);
 
+  // Ref para onClose: evita que handleKeyDown cambie de identidad
+  // en cada render (onClose suele ser una función inline del padre).
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   const handleKeyDown = useCallback(
     (e) => {
       if (e.key === 'Escape' && closeOnEsc) {
         e.stopPropagation();
-        onClose?.();
+        onCloseRef.current?.();
         return;
       }
 
@@ -46,7 +51,7 @@ export default function FormModal({
         }
       }
     },
-    [closeOnEsc, onClose]
+    [closeOnEsc]
   );
 
   useEffect(() => {
@@ -56,9 +61,17 @@ export default function FormModal({
       document.addEventListener('keydown', handleKeyDown);
 
       setTimeout(() => {
-        const focusable = modalRef.current?.querySelector(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        const modal = modalRef.current;
+        if (!modal) return;
+        // Prioridad: primer input/textarea/select, si no, el primer focusable
+        const firstInput = modal.querySelector(
+          'input:not([type="hidden"]), textarea, select'
         );
+        const focusable =
+          firstInput ||
+          modal.querySelector(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
         focusable?.focus();
       }, 50);
     } else {

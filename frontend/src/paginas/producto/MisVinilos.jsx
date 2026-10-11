@@ -189,7 +189,7 @@ export default function MisVinilos() {
       {/* Modal detalle */}
       {detalle && (
         <FormModal
-          title={`Detalle: ${detalle.nombre}`}
+          title={detalle.nombre}
           open={true}
           onClose={() => setDetalle(null)}
           size="md"
@@ -197,12 +197,41 @@ export default function MisVinilos() {
             <button type="button" onClick={() => setDetalle(null)}>Cerrar</button>
           }
         >
-          {detalle.imagenUrl && <img src={`${BASE_URL}${detalle.imagenUrl}`} alt={detalle.nombre} style={{ width: '100%', maxHeight: 260, objectFit: 'contain', border: 'var(--border-thin)' }} />}
-          <p><strong>Artista:</strong> {detalle.artista}</p>
-          <p><strong>Precio:</strong> ${Number(detalle.precio).toFixed(2)}</p>
-          <p><strong>Stock:</strong> {detalle.stock ?? 0}</p>
-          <p><strong>Estado:</strong> <span className={`badge-estado ${detalle.estado}`}>{detalle.estado}</span></p>
-          {detalle.descripcion && <p><strong>Descripción:</strong> {detalle.descripcion}</p>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {detalle.imagenUrl && (
+              <div style={{ textAlign: 'center' }}>
+                <img
+                  src={`${BASE_URL}${detalle.imagenUrl}`}
+                  alt={detalle.nombre}
+                  style={{ maxWidth: '200px', maxHeight: '200px', objectFit: 'cover', borderRadius: '6px', border: 'var(--border-thin)' }}
+                />
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Artista</p>
+                <p style={{ margin: '2px 0 0', fontWeight: 'bold', fontSize: '0.85rem' }}>{detalle.artista}</p>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Precio</p>
+                <p style={{ margin: '2px 0 0', fontWeight: 'bold', fontSize: '0.85rem', color: 'var(--red)' }}>${Number(detalle.precio).toFixed(2)}</p>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Stock</p>
+                <p style={{ margin: '2px 0 0', fontSize: '0.85rem' }}>{detalle.stock ?? 0}</p>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Estado</p>
+                <span className={`badge-estado ${detalle.estado}`} style={{ marginTop: '2px', display: 'inline-block' }}>{detalle.estado}</span>
+              </div>
+            </div>
+            {detalle.descripcion && (
+              <div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Descripción</p>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', lineHeight: '1.5', color: '#ccc' }}>{detalle.descripcion}</p>
+              </div>
+            )}
+          </div>
         </FormModal>
       )}
     </div>

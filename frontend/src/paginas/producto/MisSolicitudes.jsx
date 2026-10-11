@@ -88,31 +88,56 @@ export default function MisSolicitudes() {
           title={`Pedido #${detalle.id}`}
           open={true}
           onClose={() => setDetalle(null)}
-          size="lg"
+          size="md"
           footer={
             <button type="button" onClick={() => setDetalle(null)}>Cerrar</button>
           }
         >
-          <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '16px' }}>
-            {detalle.items && detalle.items.map((item, idx) => (
-              <div key={idx} style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--paper-2)', paddingBottom: '10px', marginBottom: '10px' }}>
-                {item.imagen_url && (
-                  <img src={`${BASE_URL}${item.imagen_url}`} alt={item.nombre} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} />
-                )}
-                <div>
-                  <p style={{ margin: 0, fontWeight: 'bold' }}>{item.nombre}</p>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--brown)' }}>{item.artista || '—'}</p>
-                  <p style={{ margin: 0, fontSize: '0.85rem' }}>{item.cantidad} x ${Number(item.precio_unitario || 0).toFixed(2)}</p>
-                </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Items */}
+            <div>
+              <h4 style={{ margin: '0 0 8px', fontSize: '0.78rem', color: 'var(--brown)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Vinilos</h4>
+              <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {detalle.items && detalle.items.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--paper-2)', paddingBottom: '8px' }}>
+                    {item.imagen_url && (
+                      <img src={`${BASE_URL}${item.imagen_url}`} alt={item.nombre} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '4px' }} />
+                    )}
+                    <div>
+                      <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.85rem' }}>{item.nombre}</p>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--brown)' }}>{item.artista || '—'}</p>
+                      <p style={{ margin: 0, fontSize: '0.82rem' }}>{item.cantidad} x ${Number(item.precio_unitario || 0).toFixed(2)}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* Resumen */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '12px', background: 'var(--paper)', borderRadius: '6px', border: '1px solid var(--border)' }}>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Cliente</p>
+                <p style={{ margin: '2px 0 0', fontWeight: 'bold', fontSize: '0.85rem' }}>{detalle.cliente_nombre || 'Usuario desconocido'}</p>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Email</p>
+                <p style={{ margin: '2px 0 0', fontSize: '0.85rem' }}>{detalle.cliente_email || '—'}</p>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Fecha</p>
+                <p style={{ margin: '2px 0 0', fontSize: '0.85rem' }}>{(detalle.createdAt ?? detalle.created_at) ? new Date(detalle.createdAt ?? detalle.created_at).toLocaleString('es-MX') : '—'}</p>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Estado</p>
+                <span className={`badge-estado ${detalle.estado}`} style={{ marginTop: '2px', display: 'inline-block' }}>{detalle.estado}</span>
+              </div>
+            </div>
+
+            {/* Total */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <p style={{ margin: 0, fontSize: '1rem' }}><strong>Total:</strong> <strong>${Number(detalle.total).toFixed(2)}</strong></p>
+            </div>
           </div>
-          <p><strong>Total Pedido:</strong> <strong>${Number(detalle.total).toFixed(2)}</strong></p>
-          <hr style={{ border: 'none', borderTop: '2px dashed var(--brown)', margin: '12px 0' }} />
-          <p><strong>Cliente:</strong> {detalle.cliente_nombre || 'Usuario desconocido'}</p>
-          <p><strong>Email:</strong> {detalle.cliente_email || '—'}</p>
-          <p><strong>Fecha:</strong> {(detalle.createdAt ?? detalle.created_at) ? new Date(detalle.createdAt ?? detalle.created_at).toLocaleString('es-MX') : '—'}</p>
-          <p><strong>Estado:</strong> <span className={`badge-estado ${detalle.estado}`}>{detalle.estado}</span></p>
         </FormModal>
       )}
     </div>
