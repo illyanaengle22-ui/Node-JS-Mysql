@@ -2177,3 +2177,345 @@ a.btn-ver:hover {
     width: 100%;
   }
 }
+
+
+/* =========================================================================
+   MODAL SIZES & VARIANTS
+   ========================================================================= */
+
+.modal-box--sm { max-width: 400px; }
+.modal-box--md { max-width: 540px; }
+.modal-box--lg { max-width: 900px; }
+.modal-box--xl { max-width: 1200px; }
+
+.modal-box--default { }
+.modal-box--danger  { border-color: var(--danger); }
+.modal-box--success { border-color: var(--success); }
+
+/* Modal animation */
+.modal-overlay {
+  animation: tv-modal-fade-in 200ms ease-out;
+}
+
+.modal-box {
+  animation: tv-modal-scale-in 200ms ease-out;
+}
+
+@keyframes tv-modal-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes tv-modal-scale-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+
+/* =========================================================================
+   VINILO DETAIL MODAL
+   ========================================================================= */
+
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: tv-modal-fade-in 200ms ease-out;
+}
+
+/* BORDE ROJO SALIENTE: replicado del .modal-box original */
+.detail-box {
+  background: var(--paper);
+  border: var(--border);
+  box-shadow: 8px 8px 0 var(--red);
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: tv-modal-scale-in 200ms ease-out;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--black-2);
+}
+
+.detail-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.detail-header-icon {
+  font-size: 1.6rem;
+  color: var(--red);
+  flex-shrink: 0;
+}
+
+.detail-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.detail-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 400;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--off-white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-artist {
+  font-size: 0.85rem;
+  color: var(--yellow);
+  font-style: italic;
+}
+
+.detail-close {
+  background: transparent;
+  border: none;
+  color: var(--off-white);
+  font-size: 1.2rem;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: color 150ms;
+}
+
+.detail-close:hover {
+  color: var(--yellow);
+}
+
+.detail-divider {
+  border-bottom: 2px dashed var(--brown);
+  margin: 0 24px;
+}
+
+.detail-body {
+  display: flex;
+  gap: 24px;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.detail-img-wrap {
+  flex-shrink: 0;
+  width: 200px;
+  height: 200px;
+}
+
+.detail-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 2px solid var(--red);
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 16px rgba(0, 0, 0, 0.5);
+  background: var(--black);
+}
+
+.detail-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--black);
+  border: 2px dashed #333;
+  border-radius: var(--radius);
+  color: #666;
+}
+
+.detail-img-placeholder i {
+  font-size: 3rem;
+  color: #444;
+}
+
+.detail-img-placeholder span {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.detail-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.detail-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--off-white);
+  line-height: 1.2;
+}
+
+.detail-artist-name {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--yellow);
+  font-style: italic;
+}
+
+.detail-price-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.detail-price {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--red);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+.detail-estado {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 0.68rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-radius: 4px;
+  transform: rotate(-2deg);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.badge-aprobado {
+  background: var(--success);
+  color: var(--off-white);
+}
+
+.badge-pendiente {
+  background: var(--warning);
+  color: var(--black);
+}
+
+.badge-rechazado {
+  background: var(--danger);
+  color: var(--off-white);
+}
+
+.detail-stock-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  color: #ccc;
+  align-self: flex-start;
+}
+
+.detail-stock-chip i {
+  color: var(--brown);
+  font-size: 0.85rem;
+}
+
+.detail-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #ccc;
+}
+
+.detail-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 2px dashed var(--brown);
+}
+
+.detail-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--red);
+  color: var(--off-white);
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 20px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background 150ms, transform 150ms;
+}
+
+.detail-btn-primary:hover {
+  background: var(--red-d);
+  transform: translateY(-1px);
+}
+
+.detail-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--yellow);
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius);
+  padding: 10px 20px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background 150ms, color 150ms;
+}
+
+.detail-btn-secondary:hover {
+  background: var(--yellow);
+  color: var(--black);
+}
+
+@media (max-width: 600px) {
+  .detail-body {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .detail-img-wrap {
+    width: 160px;
+    height: 160px;
+  }
+
+  .detail-info {
+    width: 100%;
+  }
+}

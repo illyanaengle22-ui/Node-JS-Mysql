@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, BASE_URL } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import StatCard from '../components/StatCard';
+import FormModal from '../components/FormModal';
 import { Link } from 'react-router-dom';
 import AdminReportes from './admin/AdminReportes';
 
@@ -359,36 +360,33 @@ const [detallePendiente, setDetallePendiente] = useState(null);
 
     {/* Modal detalle del pendiente */}
     {detallePendiente && (
-      <div className="modal-overlay" onClick={() => setDetallePendiente(null)}>
-        <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2>{detallePendiente.nombre}</h2>
-            <button type="button" className="modal-close" onClick={() => setDetallePendiente(null)}>×</button>
-          </div>
-          <div className="modal-body">
-            {detallePendiente.imagenUrl && (
-              <img
-                src={`${BASE_URL}${detallePendiente.imagenUrl}`}
-                alt={detallePendiente.nombre}
-                style={{ width: '100%', maxHeight: 260, objectFit: 'contain', border: 'var(--border-thin)' }}
-              />
-            )}
-            <p><strong>Artista:</strong> {detallePendiente.artista}</p>
-            <p><strong>Precio:</strong> ${Number(detallePendiente.precio).toFixed(2)}</p>
-            <p><strong>Stock:</strong> {detallePendiente.stock ?? 0}</p>
-            <p><strong>Estado:</strong> <span className={`badge-estado ${detallePendiente.estado}`}>{detallePendiente.estado}</span></p>
-            {detallePendiente.descripcion && (
-              <p><strong>Descripción:</strong> {detallePendiente.descripcion}</p>
-            )}
-            <p style={{ fontStyle: 'italic', color: 'var(--brown)', fontSize: '.85rem' }}>
-              Este vinilo está en espera de aprobación por un administrador.
-            </p>
-            <div className="modal-footer">
-              <button type="button" onClick={() => setDetallePendiente(null)}>Cerrar</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <FormModal
+        title={detallePendiente.nombre}
+        open={true}
+        onClose={() => setDetallePendiente(null)}
+        size="md"
+        footer={
+          <button type="button" onClick={() => setDetallePendiente(null)}>Cerrar</button>
+        }
+      >
+        {detallePendiente.imagenUrl && (
+          <img
+            src={`${BASE_URL}${detallePendiente.imagenUrl}`}
+            alt={detallePendiente.nombre}
+            style={{ width: '100%', maxHeight: 260, objectFit: 'contain', border: 'var(--border-thin)' }}
+          />
+        )}
+        <p><strong>Artista:</strong> {detallePendiente.artista}</p>
+        <p><strong>Precio:</strong> ${Number(detallePendiente.precio).toFixed(2)}</p>
+        <p><strong>Stock:</strong> {detallePendiente.stock ?? 0}</p>
+        <p><strong>Estado:</strong> <span className={`badge-estado ${detallePendiente.estado}`}>{detallePendiente.estado}</span></p>
+        {detallePendiente.descripcion && (
+          <p><strong>Descripción:</strong> {detallePendiente.descripcion}</p>
+        )}
+        <p style={{ fontStyle: 'italic', color: 'var(--brown)', fontSize: '.85rem' }}>
+          Este vinilo está en espera de aprobación por un administrador.
+        </p>
+      </FormModal>
     )}
   </>
 )}

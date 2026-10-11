@@ -1,0 +1,88 @@
+/* =========================================================================
+   TalkVinyl — Design Tokens
+   Paleta oficial extraída de App.css + index.css
+   ========================================================================= */
+
+:root {
+  /* === Colores base === */
+  --tv-black: #1a1714;
+  --tv-black-soft: #24211d;
+  --tv-paper: #2b2823;
+  --tv-paper-2: #3a352f;
+  --tv-off-white: #fdf8f0;
+  --tv-red: #b83b3b;
+  --tv-red-dark: #8c2121;
+  --tv-yellow: #d4a373;
+  --tv-teal: #4a7c59;
+  --tv-brown: #a68a64;
+
+  /* === Colores de estado / hover === */
+  --tv-teal-hover: #2d7a70;
+  --tv-teal-dark: #356243;
+  --tv-yellow-hover: #b88a55;
+  --tv-danger: #b83b3b;
+  --tv-success: #4a7c59;
+  --tv-warning: #d4a373;
+
+  /* === Colores de ranking === */
+  --tv-gold: #ffd700;
+  --tv-silver: #c0c0c0;
+  --tv-bronze: #cd7f32;
+
+  /* === Grises === */
+  --tv-gray-100: #333;
+  --tv-gray-200: #444;
+  --tv-gray-300: #666;
+  --tv-gray-400: #ccc;
+  --tv-white: #fff;
+  --tv-black-pure: #000;
+
+  /* === Semánticos === */
+  --tv-bg: var(--tv-black);
+  --tv-surface: var(--tv-paper);
+  --tv-surface-raised: var(--tv-black-soft);
+  --tv-surface-overlay: var(--tv-paper-2);
+  --tv-text: var(--tv-off-white);
+  --tv-text-muted: var(--tv-brown);
+  --tv-text-subtle: var(--tv-gray-400);
+  --tv-border: var(--tv-brown);
+  --tv-border-subtle: rgba(166, 138, 100, 0.3);
+  --tv-primary: var(--tv-red);
+  --tv-primary-hover: var(--tv-red-dark);
+  --tv-accent: var(--tv-yellow);
+  --tv-accent-hover: var(--tv-yellow-hover);
+  --tv-success: var(--tv-teal);
+  --tv-success-hover: var(--tv-teal-dark);
+  --tv-danger: var(--tv-danger);
+
+  /* === Overlays y sombras === */
+  --tv-overlay-modal: rgba(0, 0, 0, 0.75);
+  --tv-overlay-cart: rgba(0, 0, 0, 0.6);
+  --tv-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --tv-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --tv-shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --tv-shadow-badge: 2px 2px 0 rgba(0, 0, 0, 0.5);
+  --tv-shadow-btn: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --tv-shadow-card: 4px 8px 16px rgba(0, 0, 0, 0.5);
+  --tv-shadow-img: 4px 4px 16px rgba(0, 0, 0, 0.5);
+  --tv-shadow-panel: 2px 4px 12px rgba(0, 0, 0, 0.4);
+  --tv-shadow-sticker: 6px 6px 0 var(--tv-red);
+  --tv-shadow-sticker-sm: 1px 1px 0 var(--tv-off-white);
+
+  /* === Espaciado === */
+  --tv-space-xs: 4px;
+  --tv-space-sm: 8px;
+  --tv-space-md: 16px;
+  --tv-space-lg: 24px;
+  --tv-space-xl: 32px;
+
+  /* === Radios === */
+  --tv-radius-sm: 4px;
+  --tv-radius-md: 6px;
+  --tv-radius-lg: 8px;
+
+  /* === Tipografía === */
+  --tv-font-display: 'Oswald', sans-serif;
+  --tv-font-body: 'Inter', sans-serif;
+  --tv-font-accent: 'Special Elite', monospace;
+}

@@ -8,15 +8,15 @@ export default function ViniloDetailModal({ vinilo, open, onClose, extraActions 
 
   const estado = (vinilo.estado || '').toLowerCase();
   const estadoClass = {
-    aprobado: 'estado-aprobado',
-    pendiente: 'estado-pendiente',
-    rechazado: 'estado-rechazado',
-  }[estado] || 'estado-aprobado';
+    aprobado: 'badge-aprobado',
+    pendiente: 'badge-pendiente',
+    rechazado: 'badge-rechazado',
+  }[estado] || 'badge-aprobado';
 
   return (
     <div className="detail-overlay" onClick={onClose}>
       <div className="detail-box" onClick={(e) => e.stopPropagation()}>
-        {/* ── Header ─────────────────────────────────────────── */}
+        {/* Header */}
         <div className="detail-header">
           <div className="detail-header-left">
             <i className="fa-solid fa-record-vinyl detail-header-icon"></i>
@@ -31,9 +31,9 @@ export default function ViniloDetailModal({ vinilo, open, onClose, extraActions 
         </div>
         <div className="detail-divider"></div>
 
-        {/* ── Body ───────────────────────────────────────────── */}
+        {/* Body */}
         <div className="detail-body">
-          {/* Imagen con marco */}
+          {/* Imagen con marco tipo funda */}
           <div className="detail-img-wrap">
             {vinilo.imagenUrl && !imgError ? (
               <img
@@ -73,7 +73,7 @@ export default function ViniloDetailModal({ vinilo, open, onClose, extraActions 
           </div>
         </div>
 
-        {/* ── Footer / Acciones ──────────────────────────────── */}
+        {/* Footer / Acciones */}
         <div className="detail-footer">
           {extraActions ? (
             extraActions(vinilo)

@@ -188,25 +188,22 @@ export default function MisVinilos() {
 
       {/* Modal detalle */}
       {detalle && (
-        <div className="modal-overlay" onClick={() => setDetalle(null)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Detalle: {detalle.nombre}</h2>
-              <button type="button" className="modal-close" onClick={() => setDetalle(null)}>×</button>
-            </div>
-            <div className="modal-body">
-              {detalle.imagenUrl && <img src={`${BASE_URL}${detalle.imagenUrl}`} alt={detalle.nombre} style={{ width: '100%', maxHeight: 260, objectFit: 'contain', border: 'var(--border-thin)' }} />}
-              <p><strong>Artista:</strong> {detalle.artista}</p>
-              <p><strong>Precio:</strong> ${Number(detalle.precio).toFixed(2)}</p>
-              <p><strong>Stock:</strong> {detalle.stock ?? 0}</p>
-              <p><strong>Estado:</strong> <span className={`badge-estado ${detalle.estado}`}>{detalle.estado}</span></p>
-              {detalle.descripcion && <p><strong>Descripción:</strong> {detalle.descripcion}</p>}
-              <div className="modal-footer">
-                <button type="button" onClick={() => setDetalle(null)}>Cerrar</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <FormModal
+          title={`Detalle: ${detalle.nombre}`}
+          open={true}
+          onClose={() => setDetalle(null)}
+          size="md"
+          footer={
+            <button type="button" onClick={() => setDetalle(null)}>Cerrar</button>
+          }
+        >
+          {detalle.imagenUrl && <img src={`${BASE_URL}${detalle.imagenUrl}`} alt={detalle.nombre} style={{ width: '100%', maxHeight: 260, objectFit: 'contain', border: 'var(--border-thin)' }} />}
+          <p><strong>Artista:</strong> {detalle.artista}</p>
+          <p><strong>Precio:</strong> ${Number(detalle.precio).toFixed(2)}</p>
+          <p><strong>Stock:</strong> {detalle.stock ?? 0}</p>
+          <p><strong>Estado:</strong> <span className={`badge-estado ${detalle.estado}`}>{detalle.estado}</span></p>
+          {detalle.descripcion && <p><strong>Descripción:</strong> {detalle.descripcion}</p>}
+        </FormModal>
       )}
     </div>
   );

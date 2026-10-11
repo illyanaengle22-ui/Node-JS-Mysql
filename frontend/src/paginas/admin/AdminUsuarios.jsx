@@ -199,24 +199,21 @@ export default function AdminUsuarios() {
 
       {/* Modal detalle */}
       {detalle && (
-        <div className="modal-overlay" onClick={() => setDetalle(null)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Detalle: {detalle.nombre}</h2>
-              <button type="button" className="modal-close" onClick={() => setDetalle(null)}>×</button>
-            </div>
-            <div className="modal-body">
-              <p><strong>ID:</strong> {detalle.id}</p>
-              <p><strong>Nombre:</strong> {detalle.nombre}</p>
-              <p><strong>Email:</strong> {detalle.email}</p>
-              <p><strong>Rol:</strong> {detalle.rol || 'sin rol'}</p>
-              <p><strong>Estado:</strong> <span className={`badge-estado ${detalle.estado}`}>{detalle.estado}</span></p>
-              <div className="modal-footer">
-                <button type="button" onClick={() => setDetalle(null)}>Cerrar</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <FormModal
+          title={`Detalle: ${detalle.nombre}`}
+          open={true}
+          onClose={() => setDetalle(null)}
+          size="sm"
+          footer={
+            <button type="button" onClick={() => setDetalle(null)}>Cerrar</button>
+          }
+        >
+          <p><strong>ID:</strong> {detalle.id}</p>
+          <p><strong>Nombre:</strong> {detalle.nombre}</p>
+          <p><strong>Email:</strong> {detalle.email}</p>
+          <p><strong>Rol:</strong> {detalle.rol || 'sin rol'}</p>
+          <p><strong>Estado:</strong> <span className={`badge-estado ${detalle.estado}`}>{detalle.estado}</span></p>
+        </FormModal>
       )}
     </div>
   );

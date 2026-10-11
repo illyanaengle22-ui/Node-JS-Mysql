@@ -305,54 +305,77 @@ const guardar = async () => {
  
 {/* Modal detalle */}
 {detalle && (
-  <div className="modal-overlay" onClick={() => setDetalle(null)}>
-    <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-      <div className="modal-header">
-        <h2>Detalle: {detalle.nombre}</h2>
-        <button type="button" className="modal-close" onClick={() => setDetalle(null)}>×</button>
-      </div>
-      <div className="modal-body">
-        {detalle.imagenUrl && (
+  <FormModal
+    title={detalle.nombre}
+    open={true}
+    onClose={() => setDetalle(null)}
+    size="md"
+    footer={
+      <button type="button" onClick={() => setDetalle(null)}>Cerrar</button>
+    }
+  >
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Imagen */}
+      {detalle.imagenUrl && (
+        <div style={{ textAlign: 'center' }}>
           <img
             src={`${BASE_URL}${detalle.imagenUrl}`}
             alt={detalle.nombre}
-            style={{ width: '100%', maxHeight: 260, objectFit: 'contain', border: 'var(--border-thin)' }}
+            style={{ maxWidth: '230px', maxHeight: '230px', objectFit: 'cover', borderRadius: '6px', border: 'var(--border-thin)' }}
           />
-        )}
-        <p><strong>Artista:</strong> {detalle.artista}</p>
-        <p><strong>Precio:</strong> ${Number(detalle.precio).toFixed(2)}</p>
-        <p><strong>Stock:</strong> {detalle.stock ?? 0}</p>
-        {detalle.creadorNombre && (
-  <>
-    <hr style={{ border: 'none', borderTop: '2px dashed var(--brown)', margin: '8px 0' }} />
-    <p>
-      <strong>Registrado por:</strong>{' '}
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, verticalAlign: 'middle' }}>
-        <span style={{
-          width: 24, height: 24, borderRadius: '50%',
-          background: 'var(--mustard)', color: 'var(--ink)',
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          fontWeight: 'bold', fontSize: '.7rem'
-        }}>
-          {detalle.creadorNombre.charAt(0).toUpperCase()}
-        </span>
-        {detalle.creadorNombre}
-      </span>
-    </p>
-    {detalle.creadorEmail && (
-      <p><strong>Email del vendedor:</strong> {detalle.creadorEmail}</p>
-    )}
-  </>
-)}
-        <p><strong>Estado:</strong> <span className={`badge-estado ${detalle.estado}`}>{detalle.estado}</span></p>
-        {detalle.descripcion && <p><strong>Descripción:</strong> {detalle.descripcion}</p>}
+        </div>
+      )}
 
-        <div className="modal-footer">
-          <button type="button" onClick={() => setDetalle(null)}>Cerrar</button>
+      {/* Info principal */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        <div>
+          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Artista</p>
+          <p style={{ margin: '2px 0 0', fontWeight: 'bold', fontSize: '0.95rem' }}>{detalle.artista}</p>
+        </div>
+        <div>
+          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Precio</p>
+          <p style={{ margin: '2px 0 0', fontWeight: 'bold', fontSize: '0.95rem', color: 'var(--red)' }}>${Number(detalle.precio).toFixed(2)}</p>
+        </div>
+        <div>
+          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Stock</p>
+          <p style={{ margin: '2px 0 0', fontSize: '0.95rem' }}>{detalle.stock ?? 0}</p>
+        </div>
+        <div>
+          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Estado</p>
+          <span className={`badge-estado ${detalle.estado}`} style={{ marginTop: '2px', display: 'inline-block' }}>{detalle.estado}</span>
         </div>
       </div>
+
+      {/* Creador */}
+      {detalle.creadorNombre && (
+        <div style={{ padding: '8px', background: 'var(--paper)', borderRadius: '4px', border: '1px solid var(--border)' }}>
+          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Registrado por</p>
+          <p style={{ margin: '2px 0 0', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{
+              width: '20px', height: '20px', borderRadius: '50%',
+              background: 'var(--mustard)', color: 'var(--ink)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 'bold', fontSize: '0.65rem'
+            }}>
+              {detalle.creadorNombre.charAt(0).toUpperCase()}
+            </span>
+            {detalle.creadorNombre}
+          </p>
+          {detalle.creadorEmail && (
+            <p style={{ margin: '2px 0 0', fontSize: '0.95rem', color: 'var(--brown)' }}>{detalle.creadorEmail}</p>
+          )}
+        </div>
+      )}
+
+      {/* Descripción */}
+      {detalle.descripcion && (
+        <div>
+          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Descripción</p>
+          <p style={{ margin: '4px 0 0', fontSize: '0.95rem', lineHeight: '1.5', color: '#ccc' }}>{detalle.descripcion}</p>
+        </div>
+      )}
     </div>
-  </div>
+  </FormModal>
 )}
     </div>
   );

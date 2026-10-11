@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, BASE_URL } from '../../services/api';
 import CrudTable from '../../components/CrudTable';
+import FormModal from '../../components/FormModal';
 
 export default function AdminPedidos() {
   const [pedidos, setPedidos] = useState([]);
@@ -110,36 +111,51 @@ export default function AdminPedidos() {
 
       {/* Modal detalle */}
       {detalle && (
-        <div className="modal-overlay" onClick={() => setDetalle(null)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Detalle del pedido #{detalle.id}</h2>
-              <button type="button" className="modal-close" onClick={() => setDetalle(null)}>×</button>
-            </div>
-            <div className="modal-body">
-              {/* Información General con diseño en Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px', background: 'var(--paper)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                <div>
-                  <p style={{ margin: '0 0 4px 0', fontSize: '0.8rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Cliente</p>
-                  <p style={{ margin: 0, fontWeight: 'bold' }}>{detalle.usuario_nombre || `Usuario #${detalle.usuarioId || detalle.usuario_id}`}</p>
-                </div>
-                <div>
-                  <p style={{ margin: '0 0 4px 0', fontSize: '0.8rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Email</p>
-                  <p style={{ margin: 0 }}>{detalle.usuario_email || '—'}</p>
-                </div>
-                <div>
-                  <p style={{ margin: '0 0 4px 0', fontSize: '0.8rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Fecha</p>
-                  <p style={{ margin: 0 }}>{new Date(detalle.createdAt ?? detalle.created_at).toLocaleString('es-MX')}</p>
-                </div>
-                <div>
-                  <p style={{ margin: '0 0 4px 0', fontSize: '0.8rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Estado</p>
-                  <span className={`badge-estado ${detalle.estado}`}>{detalle.estado === 'pendiente_pago' ? 'Pendiente de Pago' : detalle.estado === 'verificando_pago' ? 'Verificando Pago' : detalle.estado}</span>
-                </div>
+        <FormModal
+          title={`Pedido #${detalle.id}`}
+          open={true}
+          onClose={() => setDetalle(null)}
+          size="md"
+          footer={
+            <>
+              {detalle.estado === 'verificando_pago' && (
+                <>
+                  <button className="btn-aprobar" onClick={() => { aprobar(detalle); setDetalle(null); }}>Aprobar Pago</button>
+                  <button className="btn-warn" onClick={() => { rechazar(detalle); setDetalle(null); }}>Rechazar</button>
+                </>
+              )}
+              {detalle.estado === 'pendiente_pago' && (
+                <button className="btn-warn" onClick={() => { rechazar(detalle); setDetalle(null); }}>Rechazar / Cancelar</button>
+              )}
+              <button type="button" onClick={() => setDetalle(null)}>Cerrar</button>
+            </>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Información General */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '12px', background: 'var(--paper)', borderRadius: '6px', border: '1px solid var(--border)' }}>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Cliente</p>
+                <p style={{ margin: '2px 0 0', fontWeight: 'bold', fontSize: '0.85rem' }}>{detalle.usuario_nombre || `Usuario #${detalle.usuarioId || detalle.usuario_id}`}</p>
               </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Email</p>
+                <p style={{ margin: '2px 0 0', fontSize: '0.85rem' }}>{detalle.usuario_email || '—'}</p>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Fecha</p>
+                <p style={{ margin: '2px 0 0', fontSize: '0.85rem' }}>{new Date(detalle.createdAt ?? detalle.created_at).toLocaleString('es-MX')}</p>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--brown)', textTransform: 'uppercase' }}>Estado</p>
+                <span className={`badge-estado ${detalle.estado}`} style={{ marginTop: '2px', display: 'inline-block' }}>{detalle.estado === 'pendiente_pago' ? 'Pendiente de Pago' : detalle.estado === 'verificando_pago' ? 'Verificando Pago' : detalle.estado}</span>
+              </div>
+            </div>
 
-              {/* Lista de Items */}
-              <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '8px', marginBottom: '16px' }}>Desglose de Vinilos</h3>
-              <div className="modal-items-list">
+            {/* Lista de Items */}
+            <div>
+              <h4 style={{ margin: '0 0 8px', fontSize: '0.78rem', color: 'var(--brown)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Desglose de Vinilos</h4>
+              <div className="modal-items-list" style={{ maxHeight: '200px' }}>
                 {Array.isArray(detalle.items) && detalle.items.length > 0 ? detalle.items.map((item, idx) => (
                   <div key={idx} className="modal-item-card">
                     <div className="modal-item-left">
@@ -155,46 +171,35 @@ export default function AdminPedidos() {
                     </div>
                     <div className="modal-item-right">
                       <span className="modal-item-price">{item.cantidad} x ${Number(item.precioUnitario || 0).toFixed(2)}</span>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--brown)', marginTop: '4px' }}>Subtotal: ${(item.cantidad * Number(item.precioUnitario || 0)).toFixed(2)}</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--brown)', marginTop: '2px' }}>Subtotal: ${(item.cantidad * Number(item.precioUnitario || 0)).toFixed(2)}</span>
                     </div>
                   </div>
                 )) : (
-                  <p style={{ color: 'var(--brown)', fontStyle: 'italic' }}>
+                  <p style={{ color: 'var(--brown)', fontStyle: 'italic', fontSize: '0.85rem' }}>
                     {(typeof detalle.items === 'string' && detalle.items.length > 0)
                       ? 'Error al leer items (formato texto)'
                       : 'No hay items registrados en este pedido.'}
                   </p>
                 )}
               </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px', fontSize: '1.1rem' }}>
-                <p><strong>Total Pedido:</strong> <strong style={{ color: 'var(--success)' }}>${Number(detalle.total).toFixed(2)}</strong></p>
-              </div>
-
-              {detalle.comprobante_url && (
-                <div style={{ marginTop: '24px', padding: '16px', border: '1px solid var(--border)', background: 'var(--paper-2)', borderRadius: '8px' }}>
-                  <p style={{ margin: '0 0 12px 0', color: 'var(--yellow)', fontWeight: 'bold' }}><i className="fa-solid fa-receipt"></i> Ficha de Depósito</p>
-                  <a href={`${BASE_URL}${detalle.comprobante_url}`} target="_blank" rel="noreferrer" style={{ display: 'block', textAlign: 'center' }}>
-                    <img src={`${BASE_URL}${detalle.comprobante_url}`} alt="Comprobante" style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '4px', border: '1px solid var(--brown)', objectFit: 'contain' }} />
-                  </a>
-                </div>
-              )}
-
-              <div className="modal-footer" style={{ marginTop: '24px' }}>
-                {detalle.estado === 'verificando_pago' && (
-                  <>
-                    <button className="btn-aprobar" onClick={() => { aprobar(detalle); setDetalle(null); }}>Aprobar Pago</button>
-                    <button className="btn-warn" onClick={() => { rechazar(detalle); setDetalle(null); }}>Rechazar</button>
-                  </>
-                )}
-                {detalle.estado === 'pendiente_pago' && (
-                  <button className="btn-warn" onClick={() => { rechazar(detalle); setDetalle(null); }}>Rechazar / Cancelar</button>
-                )}
-                <button type="button" onClick={() => setDetalle(null)}>Cerrar</button>
-              </div>
             </div>
+
+            {/* Total */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 0' }}>
+              <p style={{ margin: 0, fontSize: '1rem' }}><strong>Total:</strong> <strong style={{ color: 'var(--success)' }}>${Number(detalle.total).toFixed(2)}</strong></p>
+            </div>
+
+            {/* Comprobante */}
+            {detalle.comprobante_url && (
+              <div style={{ padding: '12px', border: '1px solid var(--border)', background: 'var(--paper-2)', borderRadius: '6px' }}>
+                <p style={{ margin: '0 0 8px', color: 'var(--yellow)', fontWeight: 'bold', fontSize: '0.85rem' }}><i className="fa-solid fa-receipt"></i> Ficha de Depósito</p>
+                <a href={`${BASE_URL}${detalle.comprobante_url}`} target="_blank" rel="noreferrer" style={{ display: 'block', textAlign: 'center' }}>
+                  <img src={`${BASE_URL}${detalle.comprobante_url}`} alt="Comprobante" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '4px', border: '1px solid var(--brown)', objectFit: 'contain' }} />
+                </a>
+              </div>
+            )}
           </div>
-        </div>
+        </FormModal>
       )}
     </div>
   );

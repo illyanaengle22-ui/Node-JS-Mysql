@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, BASE_URL } from '../../services/api';
 import CrudTable from '../../components/CrudTable';
+import FormModal from '../../components/FormModal';
 
 export default function MisSolicitudes() {
   const [solicitudes, setSolicitudes] = useState([]);
@@ -83,39 +84,36 @@ export default function MisSolicitudes() {
       />
 
       {detalle && (
-        <div className="modal-overlay" onClick={() => setDetalle(null)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Pedido #{detalle.id}</h2>
-              <button type="button" className="modal-close" onClick={() => setDetalle(null)}>×</button>
-            </div>
-            <div className="modal-body">
-              <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '16px' }}>
-                {detalle.items && detalle.items.map((item, idx) => (
-                  <div key={idx} style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--paper-2)', paddingBottom: '10px', marginBottom: '10px' }}>
-                    {item.imagen_url && (
-                      <img src={`${BASE_URL}${item.imagen_url}`} alt={item.nombre} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} />
-                    )}
-                    <div>
-                      <p style={{ margin: 0, fontWeight: 'bold' }}>{item.nombre}</p>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--brown)' }}>{item.artista || '—'}</p>
-                      <p style={{ margin: 0, fontSize: '0.85rem' }}>{item.cantidad} x ${Number(item.precio_unitario || 0).toFixed(2)}</p>
-                    </div>
-                  </div>
-                ))}
+        <FormModal
+          title={`Pedido #${detalle.id}`}
+          open={true}
+          onClose={() => setDetalle(null)}
+          size="lg"
+          footer={
+            <button type="button" onClick={() => setDetalle(null)}>Cerrar</button>
+          }
+        >
+          <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '16px' }}>
+            {detalle.items && detalle.items.map((item, idx) => (
+              <div key={idx} style={{ display: 'flex', gap: '10px', borderBottom: '1px solid var(--paper-2)', paddingBottom: '10px', marginBottom: '10px' }}>
+                {item.imagen_url && (
+                  <img src={`${BASE_URL}${item.imagen_url}`} alt={item.nombre} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} />
+                )}
+                <div>
+                  <p style={{ margin: 0, fontWeight: 'bold' }}>{item.nombre}</p>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--brown)' }}>{item.artista || '—'}</p>
+                  <p style={{ margin: 0, fontSize: '0.85rem' }}>{item.cantidad} x ${Number(item.precio_unitario || 0).toFixed(2)}</p>
+                </div>
               </div>
-              <p><strong>Total Pedido:</strong> <strong>${Number(detalle.total).toFixed(2)}</strong></p>
-              <hr style={{ border: 'none', borderTop: '2px dashed var(--brown)', margin: '12px 0' }} />
-              <p><strong>Cliente:</strong> {detalle.cliente_nombre || 'Usuario desconocido'}</p>
-              <p><strong>Email:</strong> {detalle.cliente_email || '—'}</p>
-              <p><strong>Fecha:</strong> {(detalle.createdAt ?? detalle.created_at) ? new Date(detalle.createdAt ?? detalle.created_at).toLocaleString('es-MX') : '—'}</p>
-              <p><strong>Estado:</strong> <span className={`badge-estado ${detalle.estado}`}>{detalle.estado}</span></p>
-              <div className="modal-footer">
-                <button type="button" onClick={() => setDetalle(null)}>Cerrar</button>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
+          <p><strong>Total Pedido:</strong> <strong>${Number(detalle.total).toFixed(2)}</strong></p>
+          <hr style={{ border: 'none', borderTop: '2px dashed var(--brown)', margin: '12px 0' }} />
+          <p><strong>Cliente:</strong> {detalle.cliente_nombre || 'Usuario desconocido'}</p>
+          <p><strong>Email:</strong> {detalle.cliente_email || '—'}</p>
+          <p><strong>Fecha:</strong> {(detalle.createdAt ?? detalle.created_at) ? new Date(detalle.createdAt ?? detalle.created_at).toLocaleString('es-MX') : '—'}</p>
+          <p><strong>Estado:</strong> <span className={`badge-estado ${detalle.estado}`}>{detalle.estado}</span></p>
+        </FormModal>
       )}
     </div>
   );

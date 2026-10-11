@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import ViniloCard from '../components/ViniloCard';
 import ViniloDetailModal from '../components/ViniloDetailModal';
+import FormModal from '../components/FormModal';
 
 export default function Catalogo() {
   const { auth } = useAuth();
@@ -84,32 +85,31 @@ export default function Catalogo() {
       />
 
       {solicitando && (
-        <div className="modal-overlay" onClick={() => setSolicitando(null)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Solicitar vinilo</h2>
-              <button className="modal-close" onClick={() => setSolicitando(null)}>×</button>
-            </div>
-            <div className="modal-body">
-              <p><strong>{solicitando.nombre}</strong> — {solicitando.artista}</p>
-              <p>Precio unitario: ${solicitando.precio}</p>
-              <label>Cantidad
-                <input
-                  type="number"
-                  min="1"
-                  max={solicitando.stock}
-                  value={cantidad}
-                  onChange={(e) => setCantidad(e.target.value)}
-                />
-              </label>
-              <p>Total estimado: <strong>${(Number(solicitando.precio) * Number(cantidad || 0)).toFixed(2)}</strong></p>
-              <div className="modal-footer">
-                <button className="btn-ghost" onClick={() => setSolicitando(null)}>Cancelar</button>
-                <button onClick={confirmarSolicitud}>Confirmar solicitud</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <FormModal
+          title="Solicitar vinilo"
+          open={true}
+          onClose={() => setSolicitando(null)}
+          size="sm"
+          footer={
+            <>
+              <button className="btn-ghost" onClick={() => setSolicitando(null)}>Cancelar</button>
+              <button onClick={confirmarSolicitud}>Confirmar solicitud</button>
+            </>
+          }
+        >
+          <p><strong>{solicitando.nombre}</strong> — {solicitando.artista}</p>
+          <p>Precio unitario: ${solicitando.precio}</p>
+          <label>Cantidad
+            <input
+              type="number"
+              min="1"
+              max={solicitando.stock}
+              value={cantidad}
+              onChange={(e) => setCantidad(e.target.value)}
+            />
+          </label>
+          <p>Total estimado: <strong>${(Number(solicitando.precio) * Number(cantidad || 0)).toFixed(2)}</strong></p>
+        </FormModal>
       )}
     </div>
   );
