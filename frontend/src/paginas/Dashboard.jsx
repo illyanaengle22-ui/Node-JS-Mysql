@@ -10,6 +10,7 @@ import AdminUsuarios from './admin/AdminUsuarios';
 import AdminProductos from './admin/AdminProductos';
 import AdminPendientes from './admin/AdminPendientes';
 import AdminPedidos from './admin/AdminPedidos';
+import AdminReportes from './admin/AdminReportes';
 
 // Pedido
 import MisPedidos from './pedido/MisPedidos';
@@ -34,6 +35,7 @@ export default function Dashboard() {
             <Route path="productos"  element={<AdminProductos />} />
             <Route path="pendientes" element={<AdminPendientes />} />
             <Route path="pedidos"    element={<AdminPedidos />} />
+            <Route path="reportes"   element={<Navigate to="/dashboard" replace />} />
           </>
         )}
 

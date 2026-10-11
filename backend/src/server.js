@@ -11,29 +11,35 @@ const UserRepositoryAdapter = require('./infrastructure/userRepositoryAdapter');
 const ProductRepositoryAdapter = require('./infrastructure/productRepositoryAdapter');
 const OrderRepositoryAdapter = require('./infrastructure/orderRepositoryAdapter');
 const EmailNotificationAdapter = require('./infrastructure/emailNotificationAdapter');
+const AnalyticsRepositoryAdapter = require('./infrastructure/analyticsRepositoryAdapter');
 
 //Servicios (aplicación)
 const UserService = require('./application/userService');
 const ProductService = require('./application/productService');
 const OrderService = require('./application/orderService');
+const { AnalyticsService } = require('./application/analyticsService');
 
 //Controladores (interfaces) ---
 const UserController = require('./interfaces/userController');
 const ProductController = require('./interfaces/productController');
 const OrderController = require('./interfaces/orderController');
+const AnalyticsController = require('./interfaces/analyticsController');
 
 const userRepository = new UserRepositoryAdapter();
 const productRepository = new ProductRepositoryAdapter();
 const orderRepository = new OrderRepositoryAdapter();
 const emailNotification = new EmailNotificationAdapter();
+const analyticsRepository = new AnalyticsRepositoryAdapter();
 
 const userService = new UserService(userRepository);
 const productService = new ProductService(productRepository);
 const orderService = new OrderService(orderRepository, productRepository, userRepository, emailNotification);
+const analyticsService = new AnalyticsService(analyticsRepository);
 
 const userController = new UserController(userService);
 const productController = new ProductController(productService);
 const orderController = new OrderController(orderService);
+const analyticsController = new AnalyticsController(analyticsService);
 
 const app = express();
 app.use(cors());
@@ -89,6 +95,14 @@ app.get('/pedidos/:id', autenticar, soloRol('admin', 'pedido'), orderController.
 app.put('/pedidos/:id/aprobar',  autenticar, soloRol('admin'), orderController.aprobar);
 app.put('/pedidos/:id/rechazar', autenticar, soloRol('admin'), orderController.rechazar);
 app.delete('/pedidos/:id', autenticar, soloRol('admin'), orderController.eliminar);
+
+// ── Reportes analíticos (solo admin) ─────────────────────────────────────────
+app.get('/reportes/top-productos',  autenticar, soloRol('admin'), analyticsController.topProductos);
+app.get('/reportes/ingresos',       autenticar, soloRol('admin'), analyticsController.ingresos);
+app.get('/reportes/estados',        autenticar, soloRol('admin'), analyticsController.estados);
+app.get('/reportes/ticket-promedio',autenticar, soloRol('admin'), analyticsController.ticketPromedio);
+app.get('/reportes/resumen',        autenticar, soloRol('admin'), analyticsController.resumen);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);

@@ -176,6 +176,37 @@ export const api = {
       body: formData,
     }).then(manejarRespuesta);
   },
+
+  // ---------- Reportes analíticos (solo admin)
+  reporteTopProductos: ({ desde, hasta, limite = 5 }) =>
+    fetch(
+      `${BASE_URL}/reportes/top-productos?desde=${desde}&hasta=${hasta}&limite=${limite}`,
+      { headers: authHeaders() }
+    ).then(manejarRespuesta),
+
+  reporteIngresos: ({ desde, hasta, agrupar = 'mes' }) =>
+    fetch(
+      `${BASE_URL}/reportes/ingresos?desde=${desde}&hasta=${hasta}&agrupar=${agrupar}`,
+      { headers: authHeaders() }
+    ).then(manejarRespuesta),
+
+  reporteEstados: ({ desde, hasta }) =>
+    fetch(
+      `${BASE_URL}/reportes/estados?desde=${desde}&hasta=${hasta}`,
+      { headers: authHeaders() }
+    ).then(manejarRespuesta),
+
+  reporteTicketPromedio: ({ desde, hasta }) =>
+    fetch(
+      `${BASE_URL}/reportes/ticket-promedio?desde=${desde}&hasta=${hasta}`,
+      { headers: authHeaders() }
+    ).then(manejarRespuesta),
+
+  reporteResumen: ({ desde, hasta }) =>
+    fetch(
+      `${BASE_URL}/reportes/resumen?desde=${desde}&hasta=${hasta}`,
+      { headers: authHeaders() }
+    ).then(manejarRespuesta),
 };
 
 export { BASE_URL };

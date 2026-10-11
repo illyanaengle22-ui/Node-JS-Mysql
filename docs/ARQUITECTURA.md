@@ -158,3 +158,99 @@ Ejemplo: `POST /productos` con rol `producto`
 ```
 
 ---
+
+## Subsistema Analítico
+
+El módulo analítico es un **puerto de consultas independiente** que extrae métricas agregadas sin sobrecargar las entidades operativas (Usuario, Producto, Pedido).
+
+### Principio de diseño
+
+- **Desacoplamiento total**: `AnalyticsRepositoryPort` no extiende ningún puerto operativo.
+- **Sin entidades de dominio operativas**: devuelve DTOs planos, no instancias de `User`, `Product` u `Order`.
+- **Todo el cómputo en PostgreSQL**: SUM, COUNT, AVG, GROUP BY, date_trunc. Cero filas individuales en Node.
+- **Seguridad SQL**: `date_trunc` se valida con lista blanca en `analyticsService.js` antes de interpolarse.
+
+---
+
+### Diagrama de flujo (Mermaid)
+
+```mermaid
+flowchart LR
+    subgraph INTERFACES["interfaces/"]
+        AC["analyticsController.js\nadaptador de entrada REST"]
+    end
+    subgraph APPLICATION["application/"]
+        AS["analyticsService.js\nvalidacion · lista blanca · porcentajes"]
+    end
+    subgraph DOMAIN["domain/"]
+        AP["analyticsRepositoryPort.js\ncontrato / puerto"]
+    end
+    subgraph INFRASTRUCTURE["infrastructure/"]
+        AA["analyticsRepositoryAdapter.js\nSQL · SUM · COUNT · date_trunc"]
+        DB[("PostgreSQL\npedidos · pedido_items\nproductos · usuarios")]
+    end
+    AC -->|llama a| AS
+    AS -->|usa puerto| AP
+    AP -.->|implementado por| AA
+    AA -->|query| DB
+```
+
+---
+
+### Independencia respecto a entidades operativas
+
+```
+analyticsService.js        NO importa User, Product, Order
+analyticsController.js     NO importa orderService, productService, userService
+analyticsRepositoryPort.js contrato nuevo e independiente
+```
+
+---
+
+### Nuevos archivos del subsistema
+
+| Capa | Archivo | Rol |
+|---|---|---|
+| domain | `analyticsRepositoryPort.js` | Contrato con 5 metodos de consulta |
+| application | `analyticsService.js` | Validacion, lista blanca, calculo de porcentajes |
+| infrastructure | `analyticsRepositoryAdapter.js` | 5 consultas SQL (SUM, COUNT, AVG, date_trunc) |
+| interfaces | `analyticsController.js` | 5 endpoints GET /reportes/..., solo admin |
+
+### Endpoints
+
+| Ruta backend | Ruta nginx/frontend |
+|---|---|
+| GET /reportes/top-productos | GET /api/reportes/top-productos |
+| GET /reportes/ingresos | GET /api/reportes/ingresos |
+| GET /reportes/estados | GET /api/reportes/estados |
+| GET /reportes/ticket-promedio | GET /api/reportes/ticket-promedio |
+| GET /reportes/resumen | GET /api/reportes/resumen |
+
+### Indices analiticos en 000_init_completo.sql
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_pedidos_created_at         ON pedidos(created_at);
+CREATE INDEX IF NOT EXISTS idx_pedidos_estado_created_at  ON pedidos(estado, created_at);
+CREATE INDEX IF NOT EXISTS idx_pedido_items_producto_id   ON pedido_items(producto_id);
+```
+
+### Mapeo de estados analiticos
+
+| Estado real (BD) | Categoria analitica |
+|---|---|
+| pendiente_pago | Pendiente |
+| verificando_pago | Pendiente |
+| aprobado | Pagado |
+| rechazado | Cancelado |
+
+ESTADOS_VENTA = ['aprobado'] -- solo estos pedidos cuentan como ingreso real.
+
+### Componentes frontend
+
+| Archivo | Descripcion |
+|---|---|
+| paginas/admin/AdminReportes.jsx | Vista principal; Promise.allSettled sobre 5 endpoints |
+| components/reportes/FiltroFechas.jsx | Presets + rango personalizado + selectores |
+| components/reportes/GraficoIngresos.jsx | ComposedChart barras+linea (Recharts) |
+| components/reportes/GraficoEstados.jsx | PieChart con colores semanticos |
+| components/reportes/TablaTopProductos.jsx | Ranking con medallas y barras de progreso |

@@ -84,3 +84,153 @@ Authorization: Bearer <JWT>
 | 404 | Recurso no encontrado |
 | 409 | Conflicto (email duplicado) |
 | 500 | Error interno del servidor |
+
+---
+
+## Reportes Analíticos
+
+> **Rol requerido:** `admin`  
+> **Header:** `Authorization: Bearer <JWT>`  
+> El prefijo `/api` lo agrega nginx; en el backend las rutas son `/reportes/...`
+
+### Constantes del subsistema
+
+| Constante | Valor | Descripción |
+|---|---|---|
+| `ESTADOS_VENTA` | `['aprobado']` | Solo estos estados se cuentan como venta real |
+| Mapeo analítico | `pendiente_pago` → Pendiente, `verificando_pago` → Pendiente, `aprobado` → Pagado, `rechazado` → Cancelado | Categorías usadas en gráficas |
+
+---
+
+### GET /reportes/top-productos
+
+**Parámetros query:**
+
+| Parámetro | Tipo | Obligatorio | Valores | Default |
+|---|---|---|---|---|
+| `desde` | date (YYYY-MM-DD) | ✅ | — | — |
+| `hasta` | date (YYYY-MM-DD) | ✅ | — | — |
+| `limite` | integer | ❌ | 5, 10 | 5 |
+
+**Ejemplo de petición:**
+```
+GET /api/reportes/top-productos?desde=2026-09-01&hasta=2026-10-10&limite=5
+Authorization: Bearer <token-admin>
+```
+
+**Ejemplo de respuesta (200):**
+```json
+[
+  {
+    "productoId": 3,
+    "nombre": "Abbey Road",
+    "artista": "The Beatles",
+    "unidadesVendidas": 24,
+    "montoRecaudado": 10080.00,
+    "numeroPedidos": 18
+  }
+]
+```
+
+**Errores:**
+
+| Código | Mensaje |
+|---|---|
+| 400 | `"Se requieren los parámetros 'desde' y 'hasta'"` |
+| 400 | `"Límite inválido. Valores permitidos: 5, 10"` |
+| 400 | `'"desde" no puede ser posterior a "hasta"'` |
+| 401 | `"Token no proporcionado"` |
+| 403 | `"No tienes permisos para esta acción"` |
+
+---
+
+### GET /reportes/ingresos
+
+**Parámetros query:**
+
+| Parámetro | Tipo | Obligatorio | Valores | Default |
+|---|---|---|---|---|
+| `desde` | date | ✅ | — | — |
+| `hasta` | date | ✅ | — | — |
+| `agrupar` | string | ❌ | `dia`, `semana`, `mes` | `mes` |
+
+**Ejemplo de petición:**
+```
+GET /api/reportes/ingresos?desde=2026-09-01&hasta=2026-10-10&agrupar=dia
+Authorization: Bearer <token-admin>
+```
+
+**Ejemplo de respuesta (200):**
+```json
+[
+  { "periodo": "2026-09-01T00:00:00.000Z", "ingresos": 1260.00, "pedidos": 3 },
+  { "periodo": "2026-09-02T00:00:00.000Z", "ingresos": 840.50,  "pedidos": 2 }
+]
+```
+
+**Errores:** igual que top-productos más `"Agrupación inválida. Valores permitidos: dia, semana, mes"`
+
+---
+
+### GET /reportes/estados
+
+**Parámetros query:** `desde` y `hasta` (obligatorios)
+
+**Ejemplo de petición:**
+```
+GET /api/reportes/estados?desde=2026-09-01&hasta=2026-10-10
+Authorization: Bearer <token-admin>
+```
+
+**Ejemplo de respuesta (200):**
+```json
+[
+  { "estadoReal": "aprobado",       "categoriaAnalitica": "Pagado",    "conteo": 45, "porcentaje": 60.00 },
+  { "estadoReal": "pendiente_pago", "categoriaAnalitica": "Pendiente", "conteo": 20, "porcentaje": 26.67 },
+  { "estadoReal": "rechazado",      "categoriaAnalitica": "Cancelado", "conteo": 10, "porcentaje": 13.33 }
+]
+```
+
+---
+
+### GET /reportes/ticket-promedio
+
+**Parámetros query:** `desde` y `hasta` (obligatorios)
+
+**Ejemplo de petición:**
+```
+GET /api/reportes/ticket-promedio?desde=2026-09-01&hasta=2026-10-10
+Authorization: Bearer <token-admin>
+```
+
+**Ejemplo de respuesta (200):**
+```json
+{
+  "ticketPromedioPedido":  420.00,
+  "ticketPromedioUsuario": 1890.00,
+  "totalPedidos":          45,
+  "totalUsuarios":         24
+}
+```
+
+---
+
+### GET /reportes/resumen
+
+**Parámetros query:** `desde` y `hasta` (obligatorios)
+
+**Ejemplo de petición:**
+```
+GET /api/reportes/resumen?desde=2026-09-01&hasta=2026-10-10
+Authorization: Bearer <token-admin>
+```
+
+**Ejemplo de respuesta (200):**
+```json
+{
+  "ingresosTotal":   18900.00,
+  "numeroPedidos":   45,
+  "usuariosActivos": 24,
+  "ticketPromedio":  420.00
+}
+```

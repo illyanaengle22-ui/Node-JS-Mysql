@@ -32,6 +32,9 @@ CREATE TABLE IF NOT EXISTS pedidos (
 );
 CREATE INDEX IF NOT EXISTS idx_pedidos_usuario ON pedidos(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_pedidos_estado ON pedidos(estado);
+-- Índices analíticos: aceleran las consultas del subsistema de reportes
+CREATE INDEX IF NOT EXISTS idx_pedidos_created_at ON pedidos(created_at);
+CREATE INDEX IF NOT EXISTS idx_pedidos_estado_created_at ON pedidos(estado, created_at);
 CREATE TABLE IF NOT EXISTS pedido_items (
   id SERIAL PRIMARY KEY,
   pedido_id INT REFERENCES pedidos(id) ON DELETE CASCADE,
@@ -39,6 +42,8 @@ CREATE TABLE IF NOT EXISTS pedido_items (
   cantidad INT DEFAULT 1 CHECK (cantidad > 0),
   precio_unitario NUMERIC(10,2) NOT NULL
 );
+-- Índice analítico en pedido_items: acelera top-productos
+CREATE INDEX IF NOT EXISTS idx_pedido_items_producto_id ON pedido_items(producto_id);
 INSERT INTO usuarios (nombre, email, password_hash, rol, estado)
 VALUES ('Admin Vinilos', 'admin@vinilos.com',
   '$2b$10$hp6JO3IVKLENOPqnRdsev.ru9gvTrpuMszd9IiTRoIgknr2kJdHuG',

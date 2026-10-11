@@ -3,6 +3,7 @@ import { api, BASE_URL } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import StatCard from '../components/StatCard';
 import { Link } from 'react-router-dom';
+import AdminReportes from './admin/AdminReportes';
 
 const ROLES = ['admin', 'producto', 'pedido'];
 
@@ -165,6 +166,9 @@ const [detallePendiente, setDetallePendiente] = useState(null);
             <StatCard label="Pedidos" value={stats.pedidos} />
             <StatCard label="Pedidos pendientes" value={stats.pedidosPend} />
           </div>
+
+          {/* Métricas y Reportes Analíticos */}
+          <AdminReportes embedded />
 
           {/* Productos pendientes */}
           <section style={{ marginTop: 32 }}>
