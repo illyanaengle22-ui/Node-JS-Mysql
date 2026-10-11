@@ -9,10 +9,14 @@ export default function ViniloCard({ vinilo, onVer, onSolicitar, mostrarSolicita
         <img
           src={`${BASE_URL}${imagenUrl}`}
           alt={nombre}
+          className="product-img"
           onError={(e) => { e.target.style.display = 'none'; }}
         />
       ) : (
-        <div className="no-image">♪</div>
+        <div className="no-image">
+          <i className="fa-solid fa-record-vinyl"></i>
+          <span>Sin imagen</span>
+        </div>
       )}
 
       <h3>{nombre}</h3>
@@ -28,7 +32,7 @@ export default function ViniloCard({ vinilo, onVer, onSolicitar, mostrarSolicita
         )}
         {mostrarSolicitar && (
           <button
-            className="btn-success"
+            className="btn-add-cart"
             onClick={() => onSolicitar?.(vinilo)}
             disabled={stock <= 0}
           >
