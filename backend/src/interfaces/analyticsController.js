@@ -88,6 +88,168 @@ class AnalyticsController {
       this._handleError(res, err);
     }
   };
+
+  // ── MIS VENTAS (rol: producto) ─────────────────────────────────────────────
+
+  // GET /reportes/mis-ventas/resumen?desde&hasta
+  misVentasResumen = async (req, res) => {
+    try {
+      const productorId = req.usuario?.id || req.user?.id;
+      if (!productorId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+      const { desde, hasta } = req.query;
+      if (!desde || !hasta) {
+        return res.status(400).json({ error: 'Se requieren los parámetros "desde" y "hasta"' });
+      }
+      const datos = await this.service.obtenerResumen({ desde, hasta, productorId });
+      res.json(datos);
+    } catch (err) {
+      this._handleError(res, err);
+    }
+  };
+
+  // GET /reportes/mis-ventas/ingresos?desde&hasta&agrupar
+  misVentasIngresos = async (req, res) => {
+    try {
+      const productorId = req.usuario?.id || req.user?.id;
+      if (!productorId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+      const { desde, hasta, agrupar = 'mes' } = req.query;
+      if (!desde || !hasta) {
+        return res.status(400).json({ error: 'Se requieren los parámetros "desde" y "hasta"' });
+      }
+      const datos = await this.service.obtenerIngresosPorPeriodo({ desde, hasta, agrupar, productorId });
+      res.json(datos);
+    } catch (err) {
+      this._handleError(res, err);
+    }
+  };
+
+  // GET /reportes/mis-ventas/top?desde&hasta&limite
+  misVentasTop = async (req, res) => {
+    try {
+      const productorId = req.usuario?.id || req.user?.id;
+      if (!productorId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+      const { desde, hasta, limite = '5' } = req.query;
+      if (!desde || !hasta) {
+        return res.status(400).json({ error: 'Se requieren los parámetros "desde" y "hasta"' });
+      }
+      const datos = await this.service.obtenerTopProductos({ desde, hasta, limite, productorId });
+      res.json(datos);
+    } catch (err) {
+      this._handleError(res, err);
+    }
+  };
+
+  // GET /reportes/mis-ventas/stock-bajo
+  misVentasStockBajo = async (req, res) => {
+    try {
+      const productorId = req.usuario?.id || req.user?.id;
+      if (!productorId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+      const datos = await this.service.obtenerStockBajo({ productorId, umbral: 5 });
+      res.json(datos);
+    } catch (err) {
+      this._handleError(res, err);
+    }
+  };
+
+  // GET /reportes/mis-ventas/estados?desde&hasta
+  misVentasEstados = async (req, res) => {
+    try {
+      const productorId = req.usuario?.id || req.user?.id;
+      if (!productorId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+      const { desde, hasta } = req.query;
+      if (!desde || !hasta) {
+        return res.status(400).json({ error: 'Se requieren los parámetros "desde" y "hasta"' });
+      }
+      const datos = await this.service.obtenerDistribucionEstados({ desde, hasta, productorId });
+      res.json(datos);
+    } catch (err) {
+      this._handleError(res, err);
+    }
+  };
+
+  // ── MIS COMPRAS (rol: pedido) ──────────────────────────────────────────────
+
+  // GET /reportes/mis-compras/resumen?desde&hasta
+  misComprasResumen = async (req, res) => {
+    try {
+      const usuarioId = req.usuario?.id || req.user?.id;
+      if (!usuarioId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+      const { desde, hasta } = req.query;
+      if (!desde || !hasta) {
+        return res.status(400).json({ error: 'Se requieren los parámetros "desde" y "hasta"' });
+      }
+      const datos = await this.service.obtenerResumen({ desde, hasta, usuarioId });
+      res.json(datos);
+    } catch (err) {
+      this._handleError(res, err);
+    }
+  };
+
+  // GET /reportes/mis-compras/gasto?desde&hasta&agrupar
+  misComprasGasto = async (req, res) => {
+    try {
+      const usuarioId = req.usuario?.id || req.user?.id;
+      if (!usuarioId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+      const { desde, hasta, agrupar = 'mes' } = req.query;
+      if (!desde || !hasta) {
+        return res.status(400).json({ error: 'Se requieren los parámetros "desde" y "hasta"' });
+      }
+      const datos = await this.service.obtenerIngresosPorPeriodo({ desde, hasta, agrupar, usuarioId });
+      res.json(datos);
+    } catch (err) {
+      this._handleError(res, err);
+    }
+  };
+
+  // GET /reportes/mis-compras/estados?desde&hasta
+  misComprasEstados = async (req, res) => {
+    try {
+      const usuarioId = req.usuario?.id || req.user?.id;
+      if (!usuarioId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+      const { desde, hasta } = req.query;
+      if (!desde || !hasta) {
+        return res.status(400).json({ error: 'Se requieren los parámetros "desde" y "hasta"' });
+      }
+      const datos = await this.service.obtenerDistribucionEstados({ desde, hasta, usuarioId });
+      res.json(datos);
+    } catch (err) {
+      this._handleError(res, err);
+    }
+  };
+
+  // GET /reportes/mis-compras/top?desde&hasta&limite
+  misComprasTop = async (req, res) => {
+    try {
+      const usuarioId = req.usuario?.id || req.user?.id;
+      if (!usuarioId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+      const { desde, hasta, limite = '5' } = req.query;
+      if (!desde || !hasta) {
+        return res.status(400).json({ error: 'Se requieren los parámetros "desde" y "hasta"' });
+      }
+      const datos = await this.service.obtenerTopProductos({ desde, hasta, limite, usuarioId });
+      res.json(datos);
+    } catch (err) {
+      this._handleError(res, err);
+    }
+  };
 }
 
 module.exports = AnalyticsController;

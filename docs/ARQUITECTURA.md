@@ -207,50 +207,52 @@ analyticsRepositoryPort.js contrato nuevo e independiente
 
 ---
 
-### Nuevos archivos del subsistema
+### Nuevos archivos y extensiones del subsistema analítico
 
 | Capa | Archivo | Rol |
 |---|---|---|
-| domain | `analyticsRepositoryPort.js` | Contrato con 5 metodos de consulta |
-| application | `analyticsService.js` | Validacion, lista blanca, calculo de porcentajes |
-| infrastructure | `analyticsRepositoryAdapter.js` | 5 consultas SQL (SUM, COUNT, AVG, date_trunc) |
-| interfaces | `analyticsController.js` | 5 endpoints GET /reportes/..., solo admin |
+| domain | `analyticsRepositoryPort.js` | Contrato con parámetros de alcance (`productorId`, `usuarioId`) y método `stockBajo` |
+| application | `analyticsService.js` | Casos de uso reutilizados con alcance de usuario, cálculo de porcentajes y stock bajo |
+| infrastructure | `analyticsRepositoryAdapter.js` | Consultas SQL optimizadas en BD parametrizadas (`$1, $2...`) filtrando por `pr.creado_por` o `p.usuario_id` |
+| interfaces | `analyticsController.js` | Endpoints admin (`/reportes/*`), vendedor (`/reportes/mis-ventas/*`) y comprador (`/reportes/mis-compras/*`), tomando siempre `req.user.id` del token |
 
-### Endpoints
+### Endpoints por Rol
 
-| Ruta backend | Ruta nginx/frontend |
-|---|---|
-| GET /reportes/top-productos | GET /api/reportes/top-productos |
-| GET /reportes/ingresos | GET /api/reportes/ingresos |
-| GET /reportes/estados | GET /api/reportes/estados |
-| GET /reportes/ticket-promedio | GET /api/reportes/ticket-promedio |
-| GET /reportes/resumen | GET /api/reportes/resumen |
+| Rol | Rutas backend | Descripción |
+|---|---|---|
+| `admin` | `GET /reportes/{resumen, ingresos, estados, top-productos, ticket-promedio}` | Métricas globales de la plataforma |
+| `producto` | `GET /reportes/mis-ventas/{resumen, ingresos, top, stock-bajo, estados}` | Métricas de los vinilos del vendedor (`pr.creado_por = req.user.id`) |
+| `pedido` | `GET /reportes/mis-compras/{resumen, gasto, estados, top}` | Métricas de compras del usuario (`p.usuario_id = req.user.id`) |
 
-### Indices analiticos en 000_init_completo.sql
+### Índices analíticos en base de datos
 
 ```sql
 CREATE INDEX IF NOT EXISTS idx_pedidos_created_at         ON pedidos(created_at);
 CREATE INDEX IF NOT EXISTS idx_pedidos_estado_created_at  ON pedidos(estado, created_at);
 CREATE INDEX IF NOT EXISTS idx_pedido_items_producto_id   ON pedido_items(producto_id);
+CREATE INDEX IF NOT EXISTS idx_productos_creado_por       ON productos(creado_por);
+CREATE INDEX IF NOT EXISTS idx_pedidos_usuario            ON pedidos(usuario_id);
 ```
 
-### Mapeo de estados analiticos
+### Mapeo de estados analíticos
 
-| Estado real (BD) | Categoria analitica |
+| Estado real (BD) | Categoría analítica |
 |---|---|
 | pendiente_pago | Pendiente |
 | verificando_pago | Pendiente |
 | aprobado | Pagado |
 | rechazado | Cancelado |
 
-ESTADOS_VENTA = ['aprobado'] -- solo estos pedidos cuentan como ingreso real.
+`ESTADOS_VENTA = ['aprobado']` — solo estos pedidos cuentan como ingreso/gasto real.
 
 ### Componentes frontend
 
-| Archivo | Descripcion |
+| Archivo | Descripción |
 |---|---|
-| paginas/admin/AdminReportes.jsx | Vista principal; Promise.allSettled sobre 5 endpoints |
-| components/reportes/FiltroFechas.jsx | Presets + rango personalizado + selectores |
-| components/reportes/GraficoIngresos.jsx | ComposedChart barras+linea (Recharts) |
-| components/reportes/GraficoEstados.jsx | PieChart con colores semanticos |
-| components/reportes/TablaTopProductos.jsx | Ranking con medallas y barras de progreso |
+| `paginas/admin/AdminReportes.jsx` | Dashboard analítico para administradores |
+| `components/reportes/ProductoReportes.jsx` | Dashboard de ventas para rol producto (KPIs, ingresos, estados, top vinilos, stock bajo) |
+| `components/reportes/PedidoReportes.jsx` | Dashboard de compras para rol pedido (KPIs, gasto, estados, top vinilos comprados) |
+| `components/reportes/FiltroFechas.jsx` | Presets + rango personalizado + selectores |
+| `components/reportes/GraficoIngresos.jsx` | ComposedChart barras+línea configurable (Ingresos o Gasto) |
+| `components/reportes/GraficoEstados.jsx` | PieChart con colores semánticos TalkVinyl |
+| `components/reportes/TablaTopProductos.jsx` | Ranking con medallas y barras de progreso |

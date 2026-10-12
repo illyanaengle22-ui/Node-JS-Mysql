@@ -5,6 +5,8 @@ import StatCard from '../components/StatCard';
 import FormModal from '../components/FormModal';
 import { Link } from 'react-router-dom';
 import AdminReportes from './admin/AdminReportes';
+import ProductoReportes from '../components/reportes/ProductoReportes';
+import PedidoReportes from '../components/reportes/PedidoReportes';
 
 const ROLES = ['admin', 'producto', 'pedido'];
 
@@ -299,6 +301,9 @@ const [detallePendiente, setDetallePendiente] = useState(null);
       <StatCard label="Rechazados" value={stats.productosRech} />
     </div>
 
+    {/* Métricas y Reportes Analíticos de Ventas */}
+    <ProductoReportes embedded />
+
     {/* Últimos 3 vinilos registrados */}
     <section style={{ marginTop: 32 }}>
       <div className="page-header">
@@ -394,7 +399,10 @@ const [detallePendiente, setDetallePendiente] = useState(null);
       {/* ====================== PEDIDO ====================== */}
       {rol === 'pedido' && (
         <>
-          <section style={{ marginTop: 16 }}>
+          {/* Métricas y Reportes Analíticos de Compras */}
+          <PedidoReportes embedded />
+
+          <section style={{ marginTop: 24 }}>
             <div className="page-header">
               <h2>Recomendados para ti</h2>
               <span className="crud-count">{recomendados.length} álbumes</span>

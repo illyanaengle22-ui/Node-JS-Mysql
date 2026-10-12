@@ -19,28 +19,43 @@ VALUES
   ('Miguel Torres',    'miguel@demo.com',    '$2b$10$hp6JO3IVKLENOPqnRdsev.ru9gvTrpuMszd9IiTRoIgknr2kJdHuG', 'pedido',   'activo', NOW() - INTERVAL '60 days'),
   ('Ana Flores',       'ana@demo.com',       '$2b$10$hp6JO3IVKLENOPqnRdsev.ru9gvTrpuMszd9IiTRoIgknr2kJdHuG', 'pedido',   'activo', NOW() - INTERVAL '55 days'),
   ('Roberto Salas',    'roberto@demo.com',   '$2b$10$hp6JO3IVKLENOPqnRdsev.ru9gvTrpuMszd9IiTRoIgknr2kJdHuG', 'pedido',   'activo', NOW() - INTERVAL '50 days'),
-  ('Mariana Lopez',    'mariana@demo.com',   '$2b$10$hp6JO3IVKLENOPqnRdsev.ru9gvTrpuMszd9IiTRoIgknr2kJdHuG', 'producto', 'activo', NOW() - INTERVAL '70 days')
+  ('Mariana Lopez',    'mariana@demo.com',   '$2b$10$hp6JO3IVKLENOPqnRdsev.ru9gvTrpuMszd9IiTRoIgknr2kJdHuG', 'producto', 'activo', NOW() - INTERVAL '70 days'),
+  ('Fernando Diaz',    'fernando@demo.com',  '$2b$10$hp6JO3IVKLENOPqnRdsev.ru9gvTrpuMszd9IiTRoIgknr2kJdHuG', 'producto', 'activo', NOW() - INTERVAL '65 days')
 ON CONFLICT (email) DO NOTHING;
 
--- ─── 2. Productos (vinilos) de prueba con stock suficiente ───────────────────
--- creado_por = id del usuario 'mariana@demo.com' (rol producto)
--- Estado 'aprobado' para que aparezcan en el catálogo
+-- ─── 2. Productos (vinilos) de prueba con stock y creadores ───────────────────
+-- Vinilos de Mariana Lopez (incluye stock bajo <= 5 para demostración)
 INSERT INTO productos (nombre, artista, descripcion, precio, stock, estado, creado_por, created_at)
 SELECT
-  nombre, artista, descripcion, precio, 500, 'aprobado',
+  nombre, artista, descripcion, precio, stock, 'aprobado',
   (SELECT id FROM usuarios WHERE email = 'mariana@demo.com' LIMIT 1),
   NOW() - INTERVAL '75 days'
 FROM (VALUES
   ('Dark Side of the Moon',  'Pink Floyd',           'Clásico del rock progresivo',         450.00, 500),
   ('Thriller',               'Michael Jackson',      'El álbum más vendido de la historia',  380.00, 500),
   ('Abbey Road',             'The Beatles',          'Último álbum grabado por los Beatles', 420.00, 500),
-  ('Rumours',                'Fleetwood Mac',        'Rock clásico de los 70s',              350.00, 500),
+  ('Rumours',                'Fleetwood Mac',        'Rock clásico de los 70s',              350.00, 4),
   ('Born to Run',            'Bruce Springsteen',    'Rock americano icónico',               320.00, 500),
   ('Purple Rain',            'Prince',               'Soundtrack legendario',                340.00, 500),
   ('Led Zeppelin IV',        'Led Zeppelin',         'Hard rock definitivo',                 390.00, 500),
   ('Nevermind',              'Nirvana',              'El álbum que definió el grunge',       310.00, 500),
   ('Back in Black',          'AC/DC',                'Hard rock de alto octanaje',           360.00, 500),
-  ('Kind of Blue',           'Miles Davis',          'Jazz modal imprescindible',            280.00, 500)
+  ('Kind of Blue',           'Miles Davis',          'Jazz modal imprescindible',            280.00, 3)
+) AS t(nombre, artista, descripcion, precio, stock)
+ON CONFLICT DO NOTHING;
+
+-- Vinilos de Fernando Diaz (segundo vendedor con sus propios vinilos y stock bajo)
+INSERT INTO productos (nombre, artista, descripcion, precio, stock, estado, creado_por, created_at)
+SELECT
+  nombre, artista, descripcion, precio, stock, 'aprobado',
+  (SELECT id FROM usuarios WHERE email = 'fernando@demo.com' LIMIT 1),
+  NOW() - INTERVAL '60 days'
+FROM (VALUES
+  ('Random Access Memories', 'Daft Punk',            'Electrónica y funk moderno',           490.00, 250),
+  ('The Wall',               'Pink Floyd',           'Ópera rock legendaria',                440.00, 300),
+  ('A Night at the Opera',   'Queen',                'Incluye Bohemian Rhapsody',            410.00, 200),
+  ('OK Computer',            'Radiohead',            'Hito del rock alternativo',            370.00, 2),
+  ('Discovery',              'Daft Punk',            'House francés icónico',                390.00, 180)
 ) AS t(nombre, artista, descripcion, precio, stock)
 ON CONFLICT DO NOTHING;
 
@@ -69,12 +84,13 @@ BEGIN
                     'ana@demo.com','roberto@demo.com')
   ) INTO v_usuario_ids;
 
-  -- Recoger IDs de productos demo aprobados
+  -- Recoger IDs de todos los productos demo aprobados de ambos vendedores
   SELECT ARRAY(
     SELECT id FROM productos
     WHERE nombre IN (
       'Dark Side of the Moon','Thriller','Abbey Road','Rumours','Born to Run',
-      'Purple Rain','Led Zeppelin IV','Nevermind','Back in Black','Kind of Blue'
+      'Purple Rain','Led Zeppelin IV','Nevermind','Back in Black','Kind of Blue',
+      'Random Access Memories','The Wall','A Night at the Opera','OK Computer','Discovery'
     )
     AND estado = 'aprobado'
   ) INTO v_producto_ids;

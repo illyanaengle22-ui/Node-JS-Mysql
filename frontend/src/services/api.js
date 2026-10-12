@@ -207,6 +207,61 @@ export const api = {
       `${BASE_URL}/reportes/resumen?desde=${desde}&hasta=${hasta}`,
       { headers: authHeaders() }
     ).then(manejarRespuesta),
+
+  // ---------- Reportes analíticos (rol producto)
+  misVentasResumen: ({ desde, hasta }) =>
+    fetch(
+      `${BASE_URL}/reportes/mis-ventas/resumen?desde=${desde}&hasta=${hasta}`,
+      { headers: authHeaders() }
+    ).then(manejarRespuesta),
+
+  misVentasIngresos: ({ desde, hasta, agrupar = 'mes' }) =>
+    fetch(
+      `${BASE_URL}/reportes/mis-ventas/ingresos?desde=${desde}&hasta=${hasta}&agrupar=${agrupar}`,
+      { headers: authHeaders() }
+    ).then(manejarRespuesta),
+
+  misVentasTop: ({ desde, hasta, limite = 5 }) =>
+    fetch(
+      `${BASE_URL}/reportes/mis-ventas/top?desde=${desde}&hasta=${hasta}&limite=${limite}`,
+      { headers: authHeaders() }
+    ).then(manejarRespuesta),
+
+  misVentasStockBajo: () =>
+    fetch(`${BASE_URL}/reportes/mis-ventas/stock-bajo`, {
+      headers: authHeaders(),
+    }).then(manejarRespuesta),
+
+  misVentasEstados: ({ desde, hasta }) =>
+    fetch(
+      `${BASE_URL}/reportes/mis-ventas/estados?desde=${desde}&hasta=${hasta}`,
+      { headers: authHeaders() }
+    ).then(manejarRespuesta),
+
+  // ---------- Reportes analíticos (rol pedido)
+  misComprasResumen: ({ desde, hasta }) =>
+    fetch(
+      `${BASE_URL}/reportes/mis-compras/resumen?desde=${desde}&hasta=${hasta}`,
+      { headers: authHeaders() }
+    ).then(manejarRespuesta),
+
+  misComprasGasto: ({ desde, hasta, agrupar = 'mes' }) =>
+    fetch(
+      `${BASE_URL}/reportes/mis-compras/gasto?desde=${desde}&hasta=${hasta}&agrupar=${agrupar}`,
+      { headers: authHeaders() }
+    ).then(manejarRespuesta),
+
+  misComprasEstados: ({ desde, hasta }) =>
+    fetch(
+      `${BASE_URL}/reportes/mis-compras/estados?desde=${desde}&hasta=${hasta}`,
+      { headers: authHeaders() }
+    ).then(manejarRespuesta),
+
+  misComprasTop: ({ desde, hasta, limite = 5 }) =>
+    fetch(
+      `${BASE_URL}/reportes/mis-compras/top?desde=${desde}&hasta=${hasta}&limite=${limite}`,
+      { headers: authHeaders() }
+    ).then(manejarRespuesta),
 };
 
 export { BASE_URL };

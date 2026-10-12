@@ -234,3 +234,78 @@ Authorization: Bearer <token-admin>
   "ticketPromedio":  420.00
 }
 ```
+
+---
+
+## Reportes Analíticos — Mis Ventas (Rol: producto)
+
+> **Rol requerido:** `producto`  
+> **Header:** `Authorization: Bearer <JWT>`  
+> **Seguridad:** El ID del vendedor se extrae **siempre** del token JWT (`req.user.id`). Cualquier intento de enviar IDs en query o body es ignorado.
+
+| Método | Ruta | Query params | Descripción |
+|---|---|---|---|
+| GET | `/reportes/mis-ventas/resumen` | `desde`, `hasta` | Ingresos totales, unidades vendidas y número de pedidos sobre sus vinilos |
+| GET | `/reportes/mis-ventas/ingresos` | `desde`, `hasta`, `agrupar` (`dia`\|`semana`\|`mes`) | Serie temporal de ingresos y pedidos de sus vinilos |
+| GET | `/reportes/mis-ventas/top` | `desde`, `hasta`, `limite` (`5`\|`10`) | Top de sus propios vinilos más vendidos |
+| GET | `/reportes/mis-ventas/stock-bajo` | — | Lista de sus vinilos con stock crítico (`stock <= 5`) |
+| GET | `/reportes/mis-ventas/estados` | `desde`, `hasta` | Distribución por estado de pedidos que contienen sus vinilos |
+
+### Ejemplo: GET /reportes/mis-ventas/resumen
+```json
+{
+  "ingresosTotal": 5420.00,
+  "unidadesVendidas": 14,
+  "numeroPedidos": 9
+}
+```
+
+### Ejemplo: GET /reportes/mis-ventas/stock-bajo
+```json
+[
+  {
+    "id": 4,
+    "nombre": "Rumours",
+    "artista": "Fleetwood Mac",
+    "precio": 350.00,
+    "stock": 4,
+    "estado": "aprobado",
+    "imagenUrl": null
+  }
+]
+```
+
+---
+
+## Reportes Analíticos — Mis Compras (Rol: pedido)
+
+> **Rol requerido:** `pedido`  
+> **Header:** `Authorization: Bearer <JWT>`  
+> **Seguridad:** El ID del comprador se extrae **siempre** del token JWT (`req.user.id`).
+
+| Método | Ruta | Query params | Descripción |
+|---|---|---|---|
+| GET | `/reportes/mis-compras/resumen` | `desde`, `hasta` | Gasto total, número de pedidos y ticket promedio de sus compras aprobadas |
+| GET | `/reportes/mis-compras/gasto` | `desde`, `hasta`, `agrupar` (`dia`\|`semana`\|`mes`) | Serie temporal de gasto por período |
+| GET | `/reportes/mis-compras/estados` | `desde`, `hasta` | Conteo y porcentaje de sus pedidos por estado |
+| GET | `/reportes/mis-compras/top` | `desde`, `hasta`, `limite` (`5`\|`10`) | Top de vinilos que más compra el usuario |
+
+### Ejemplo: GET /reportes/mis-compras/resumen
+```json
+{
+  "gastoTotal": 2450.00,
+  "numeroPedidos": 6,
+  "ticketPromedio": 408.33
+}
+```
+
+### Ejemplo: GET /reportes/mis-compras/gasto
+```json
+[
+  {
+    "periodo": "2026-10-01T00:00:00.000Z",
+    "ingresos": 1200.00,
+    "pedidos": 3
+  }
+]
+```

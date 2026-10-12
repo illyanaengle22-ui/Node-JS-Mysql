@@ -28,12 +28,17 @@ function ResumenCard({ icono, label, valor, sublabel }) {
 // ── Estado inicial ────────────────────────────────────────────────────────────
 const ESTADO_VACIO = { datos: null, cargando: false, error: null };
 
-function toISO(d) { return d.toISOString().slice(0, 10); }
+function toLocalYMD(d) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 function rangoDefecto() {
   const hoy   = new Date();
   const inicio = new Date(hoy); inicio.setDate(hoy.getDate() - 6);
-  return { desde: toISO(inicio), hasta: toISO(hoy) };
+  return { desde: toLocalYMD(inicio), hasta: toLocalYMD(hoy) };
 }
 
 // ── Componente principal ──────────────────────────────────────────────────────

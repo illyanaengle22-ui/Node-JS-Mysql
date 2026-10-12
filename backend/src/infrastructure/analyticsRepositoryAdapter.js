@@ -20,24 +20,55 @@ const ESTADOS_VENTA_SQL = ESTADOS_VENTA.map((e) => `'${e}'`).join(', ');
 
 class AnalyticsRepositoryAdapter extends AnalyticsRepositoryPort {
   /**
-   * Ajusta "hasta" para que el filtro sea inclusivo (hasta < hasta + 1 día).
-   * @param {Date} hasta
-   * @returns {Date}
+   * Normaliza el rango a strings YYYY-MM-DD HH:mm:ss para comparaciones exactas
+   * en PostgreSQL sin depender del desfase horario UTC del driver.
+   * hasta es inclusivo (hasta < hastaSigDia 00:00:00).
    */
-  _hastaExclusivo(hasta) {
-    const d = new Date(hasta);
-    d.setDate(d.getDate() + 1);
-    return d;
+  _formatearRango(desde, hasta) {
+    const toYMD = (val) => {
+      if (typeof val === 'string') {
+        return val.slice(0, 10);
+      }
+      const d = new Date(val);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const desdeYMD = toYMD(desde);
+    const hastaYMD = toYMD(hasta);
+
+    const [y, m, d] = hastaYMD.split('-').map(Number);
+    const hastaSig = new Date(y, m - 1, d + 1);
+    const hastaExYMD = `${hastaSig.getFullYear()}-${String(hastaSig.getMonth() + 1).padStart(2, '0')}-${String(hastaSig.getDate()).padStart(2, '0')}`;
+
+    return {
+      desdeSql: `${desdeYMD} 00:00:00`,
+      hastaExSql: `${hastaExYMD} 00:00:00`,
+    };
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-
   /**
-   * Top N productos por unidades vendidas (solo pedidos en ESTADOS_VENTA).
-   * Usa la tabla pedido_items para desglosar el conteo por producto.
+   * Top productos por unidades vendidas (solo pedidos en ESTADOS_VENTA).
+   * Soporta alcance por productorId (vendedor) o usuarioId (comprador).
    */
-  async topProductos({ desde, hasta, limite }) {
-    const hastaEx = this._hastaExclusivo(hasta);
+  async topProductos({ desde, hasta, limite, productorId, usuarioId }) {
+    const { desdeSql, hastaExSql } = this._formatearRango(desde, hasta);
+    const params = [desdeSql, hastaExSql];
+    let filtroScope = '';
+
+    if (productorId) {
+      params.push(productorId);
+      filtroScope = `AND pr.creado_por = $${params.length}`;
+    } else if (usuarioId) {
+      params.push(usuarioId);
+      filtroScope = `AND p.usuario_id = $${params.length}`;
+    }
+
+    params.push(limite);
+    const limiteIdx = params.length;
+
     const sql = `
       SELECT
         pr.id                          AS producto_id,
@@ -52,24 +83,63 @@ class AnalyticsRepositoryAdapter extends AnalyticsRepositoryPort {
       WHERE p.estado IN (${ESTADOS_VENTA_SQL})
         AND p.created_at >= $1
         AND p.created_at <  $2
+        ${filtroScope}
       GROUP BY pr.id, pr.nombre, pr.artista
       ORDER BY unidades_vendidas DESC, monto_recaudado DESC
-      LIMIT $3
+      LIMIT $${limiteIdx}
     `;
-    const result = await pool.query(sql, [desde, hastaEx, limite]);
+    const result = await pool.query(sql, params);
     return result.rows;
   }
 
   // ────────────────────────────────────────────────────────────────────────────
 
   /**
-   * Ingresos agrupados por período usando date_trunc.
-   * El parámetro "agrupar" ya fue validado con lista blanca (day/week/month)
-   * por analyticsService.js, por lo que es seguro interpolarlo como literal SQL.
+   * Ingresos / gasto agrupados por período usando date_trunc.
+   * Si productorId está definido: suma items de sus productos.
+   * Si usuarioId está definido: suma gasto de sus pedidos.
    */
-  async ingresosPorPeriodo({ desde, hasta, agrupar }) {
-    const hastaEx = this._hastaExclusivo(hasta);
-    // agrupar = 'day' | 'week' | 'month' — solo estos tres valores posibles
+  async ingresosPorPeriodo({ desde, hasta, agrupar, productorId, usuarioId }) {
+    const { desdeSql, hastaExSql } = this._formatearRango(desde, hasta);
+
+    if (productorId) {
+      const sql = `
+        SELECT
+          date_trunc('${agrupar}', p.created_at) AS periodo,
+          SUM(pi.cantidad * pi.precio_unitario)  AS ingresos,
+          COUNT(DISTINCT p.id)                   AS pedidos
+        FROM pedidos p
+        JOIN pedido_items pi ON pi.pedido_id = p.id
+        JOIN productos pr ON pr.id = pi.producto_id
+        WHERE p.estado IN (${ESTADOS_VENTA_SQL})
+          AND p.created_at >= $1
+          AND p.created_at <  $2
+          AND pr.creado_por = $3
+        GROUP BY periodo
+        ORDER BY periodo ASC
+      `;
+      const result = await pool.query(sql, [desdeSql, hastaExSql, productorId]);
+      return result.rows;
+    }
+
+    if (usuarioId) {
+      const sql = `
+        SELECT
+          date_trunc('${agrupar}', p.created_at) AS periodo,
+          SUM(p.total)                            AS ingresos,
+          COUNT(p.id)                             AS pedidos
+        FROM pedidos p
+        WHERE p.estado IN (${ESTADOS_VENTA_SQL})
+          AND p.created_at >= $1
+          AND p.created_at <  $2
+          AND p.usuario_id = $3
+        GROUP BY periodo
+        ORDER BY periodo ASC
+      `;
+      const result = await pool.query(sql, [desdeSql, hastaExSql, usuarioId]);
+      return result.rows;
+    }
+
     const sql = `
       SELECT
         date_trunc('${agrupar}', p.created_at) AS periodo,
@@ -82,18 +152,53 @@ class AnalyticsRepositoryAdapter extends AnalyticsRepositoryPort {
       GROUP BY periodo
       ORDER BY periodo ASC
     `;
-    const result = await pool.query(sql, [desde, hastaEx]);
+    const result = await pool.query(sql, [desdeSql, hastaExSql]);
     return result.rows;
   }
 
   // ────────────────────────────────────────────────────────────────────────────
 
   /**
-   * Conteo por estado real (todos los estados, sin filtro de ESTADOS_VENTA).
-   * El servicio calculará los porcentajes y el mapeo a categorías analíticas.
+   * Conteo por estado real (todos los estados).
+   * Soporta alcance por productorId o usuarioId.
    */
-  async distribucionEstados({ desde, hasta }) {
-    const hastaEx = this._hastaExclusivo(hasta);
+  async distribucionEstados({ desde, hasta, productorId, usuarioId }) {
+    const { desdeSql, hastaExSql } = this._formatearRango(desde, hasta);
+
+    if (productorId) {
+      const sql = `
+        SELECT
+          p.estado,
+          COUNT(DISTINCT p.id) AS conteo
+        FROM pedidos p
+        JOIN pedido_items pi ON pi.pedido_id = p.id
+        JOIN productos pr ON pr.id = pi.producto_id
+        WHERE p.created_at >= $1
+          AND p.created_at <  $2
+          AND pr.creado_por = $3
+        GROUP BY p.estado
+        ORDER BY conteo DESC
+      `;
+      const result = await pool.query(sql, [desdeSql, hastaExSql, productorId]);
+      return result.rows;
+    }
+
+    if (usuarioId) {
+      const sql = `
+        SELECT
+          p.estado,
+          COUNT(p.id) AS conteo
+        FROM pedidos p
+        WHERE p.created_at >= $1
+          AND p.created_at <  $2
+          AND p.usuario_id = $3
+        GROUP BY p.estado
+        ORDER BY conteo DESC
+      `;
+      const result = await pool.query(sql, [desdeSql, hastaExSql, usuarioId]);
+      return result.rows;
+    }
+
     const sql = `
       SELECT
         p.estado,
@@ -104,17 +209,34 @@ class AnalyticsRepositoryAdapter extends AnalyticsRepositoryPort {
       GROUP BY p.estado
       ORDER BY conteo DESC
     `;
-    const result = await pool.query(sql, [desde, hastaEx]);
+    const result = await pool.query(sql, [desdeSql, hastaExSql]);
     return result.rows;
   }
 
   // ────────────────────────────────────────────────────────────────────────────
 
   /**
-   * Ticket promedio global y agrupado por usuario (solo ESTADOS_VENTA).
+   * Ticket promedio global y por usuario.
    */
-  async ticketPromedio({ desde, hasta }) {
-    const hastaEx = this._hastaExclusivo(hasta);
+  async ticketPromedio({ desde, hasta, usuarioId }) {
+    const { desdeSql, hastaExSql } = this._formatearRango(desde, hasta);
+
+    if (usuarioId) {
+      const sql = `
+        SELECT
+          COALESCE(AVG(p.total), 0) AS ticket_promedio_pedido,
+          COALESCE(SUM(p.total), 0) AS total_gastado,
+          COUNT(p.id)               AS total_pedidos
+        FROM pedidos p
+        WHERE p.estado IN (${ESTADOS_VENTA_SQL})
+          AND p.created_at >= $1
+          AND p.created_at <  $2
+          AND p.usuario_id = $3
+      `;
+      const result = await pool.query(sql, [desdeSql, hastaExSql, usuarioId]);
+      return result.rows[0] || {};
+    }
+
     const sql = `
       SELECT
         AVG(p.total)                        AS ticket_promedio_pedido,
@@ -134,19 +256,52 @@ class AnalyticsRepositoryAdapter extends AnalyticsRepositoryPort {
         AND p.created_at >= $1
         AND p.created_at <  $2
     `;
-    const result = await pool.query(sql, [desde, hastaEx]);
+    const result = await pool.query(sql, [desdeSql, hastaExSql]);
     return result.rows[0] || {};
   }
 
   // ────────────────────────────────────────────────────────────────────────────
 
   /**
-   * Resumen general: ingresos, pedidos, usuarios activos, ticket promedio.
-   * Solo pedidos en ESTADOS_VENTA para las métricas financieras.
-   * Usuarios activos = usuarios con al menos un pedido aprobado en el período.
+   * Resumen general: ingresos/gasto, pedidos, usuarios activos, etc.
    */
-  async resumenGeneral({ desde, hasta }) {
-    const hastaEx = this._hastaExclusivo(hasta);
+  async resumenGeneral({ desde, hasta, productorId, usuarioId }) {
+    const { desdeSql, hastaExSql } = this._formatearRango(desde, hasta);
+
+    if (productorId) {
+      const sql = `
+        SELECT
+          COALESCE(SUM(pi.cantidad * pi.precio_unitario), 0) AS ingresos_total,
+          COALESCE(SUM(pi.cantidad), 0)                     AS unidades_vendidas,
+          COUNT(DISTINCT p.id)                              AS numero_pedidos
+        FROM pedidos p
+        JOIN pedido_items pi ON pi.pedido_id = p.id
+        JOIN productos pr ON pr.id = pi.producto_id
+        WHERE p.estado IN (${ESTADOS_VENTA_SQL})
+          AND p.created_at >= $1
+          AND p.created_at <  $2
+          AND pr.creado_por = $3
+      `;
+      const result = await pool.query(sql, [desdeSql, hastaExSql, productorId]);
+      return result.rows[0] || {};
+    }
+
+    if (usuarioId) {
+      const sql = `
+        SELECT
+          COALESCE(SUM(p.total), 0) AS gasto_total,
+          COUNT(p.id)               AS numero_pedidos,
+          COALESCE(AVG(p.total), 0) AS ticket_promedio
+        FROM pedidos p
+        WHERE p.estado IN (${ESTADOS_VENTA_SQL})
+          AND p.created_at >= $1
+          AND p.created_at <  $2
+          AND p.usuario_id = $3
+      `;
+      const result = await pool.query(sql, [desdeSql, hastaExSql, usuarioId]);
+      return result.rows[0] || {};
+    }
+
     const sql = `
       SELECT
         COALESCE(SUM(p.total), 0)            AS ingresos_total,
@@ -158,8 +313,32 @@ class AnalyticsRepositoryAdapter extends AnalyticsRepositoryPort {
         AND p.created_at >= $1
         AND p.created_at <  $2
     `;
-    const result = await pool.query(sql, [desde, hastaEx]);
+    const result = await pool.query(sql, [desdeSql, hastaExSql]);
     return result.rows[0] || {};
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Productos con stock bajo (stock <= umbral) de un vendedor.
+   */
+  async stockBajo({ productorId, umbral = 5 }) {
+    const sql = `
+      SELECT
+        id,
+        nombre,
+        artista,
+        precio,
+        stock,
+        estado,
+        imagen_url AS "imagenUrl"
+      FROM productos
+      WHERE creado_por = $1
+        AND stock <= $2
+      ORDER BY stock ASC, id DESC
+    `;
+    const result = await pool.query(sql, [productorId, umbral]);
+    return result.rows;
   }
 }
 

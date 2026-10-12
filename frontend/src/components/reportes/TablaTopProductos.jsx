@@ -4,18 +4,25 @@
  * Incluye barra visual de progreso relativo.
  */
 
-export default function TablaTopProductos({ datos, cargando, error }) {
+export default function TablaTopProductos({
+  datos,
+  cargando,
+  error,
+  titulo = 'Top productos por ventas',
+  mensajeVacio = 'Sin ventas en el período seleccionado',
+  icono = 'fa-trophy',
+}) {
   const filas = datos ?? [];
   if (cargando) return <div className="chart-estado cargando"><span className="spinner" />Cargando top productos…</div>;
   if (error)    return <div className="chart-estado error"><i className="fa-solid fa-triangle-exclamation" /> {error}</div>;
-  if (!filas.length) return <div className="chart-estado vacio"><i className="fa-solid fa-record-vinyl" /> Sin ventas en el período seleccionado</div>;
+  if (!filas.length) return <div className="chart-estado vacio"><i className="fa-solid fa-record-vinyl" /> {mensajeVacio}</div>;
 
   const maxUnidades = Math.max(...filas.map((d) => d.unidadesVendidas), 1);
 
   return (
     <div className="chart-wrapper">
       <h3 className="chart-titulo">
-        <i className="fa-solid fa-trophy" /> Top productos por ventas
+        <i className={`fa-solid ${icono}`} /> {titulo}
       </h3>
       <div className="top-tabla">
         {filas.map((p, i) => (

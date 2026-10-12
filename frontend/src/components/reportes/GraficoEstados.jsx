@@ -43,7 +43,13 @@ function CustomLabel({ cx, cy, midAngle, outerRadius, porcentaje }) {
   );
 }
 
-export default function GraficoEstados({ datos, cargando, error }) {
+export default function GraficoEstados({
+  datos,
+  cargando,
+  error,
+  titulo = 'Estado de pedidos',
+  icono = 'fa-chart-pie',
+}) {
   const filas = datos ?? [];
   if (cargando) return <div className="chart-estado cargando"><span className="spinner" />Cargando estados…</div>;
   if (error)    return <div className="chart-estado error"><i className="fa-solid fa-triangle-exclamation" /> {error}</div>;
@@ -67,7 +73,7 @@ export default function GraficoEstados({ datos, cargando, error }) {
   return (
     <div className="chart-wrapper">
       <h3 className="chart-titulo">
-        <i className="fa-solid fa-chart-pie" /> Estado de pedidos
+        <i className={`fa-solid ${icono}`} /> {titulo}
       </h3>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>

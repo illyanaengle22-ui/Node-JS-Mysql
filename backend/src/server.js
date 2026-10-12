@@ -103,6 +103,19 @@ app.get('/reportes/estados',        autenticar, soloRol('admin'), analyticsContr
 app.get('/reportes/ticket-promedio',autenticar, soloRol('admin'), analyticsController.ticketPromedio);
 app.get('/reportes/resumen',        autenticar, soloRol('admin'), analyticsController.resumen);
 
+// ── Reportes analíticos (rol: producto) ──────────────────────────────────────
+app.get('/reportes/mis-ventas/resumen',    autenticar, soloRol('producto'), analyticsController.misVentasResumen);
+app.get('/reportes/mis-ventas/ingresos',   autenticar, soloRol('producto'), analyticsController.misVentasIngresos);
+app.get('/reportes/mis-ventas/top',        autenticar, soloRol('producto'), analyticsController.misVentasTop);
+app.get('/reportes/mis-ventas/stock-bajo', autenticar, soloRol('producto'), analyticsController.misVentasStockBajo);
+app.get('/reportes/mis-ventas/estados',    autenticar, soloRol('producto'), analyticsController.misVentasEstados);
+
+// ── Reportes analíticos (rol: pedido) ────────────────────────────────────────
+app.get('/reportes/mis-compras/resumen', autenticar, soloRol('pedido'), analyticsController.misComprasResumen);
+app.get('/reportes/mis-compras/gasto',   autenticar, soloRol('pedido'), analyticsController.misComprasGasto);
+app.get('/reportes/mis-compras/estados', autenticar, soloRol('pedido'), analyticsController.misComprasEstados);
+app.get('/reportes/mis-compras/top',     autenticar, soloRol('pedido'), analyticsController.misComprasTop);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);

@@ -13,25 +13,28 @@ const PRESETS = [
   { label: 'Rango propio',   id: 'custom' },
 ];
 
-function toISO(d) {
-  return d.toISOString().slice(0, 10);
+function toLocalYMD(d) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function calcularRango(id) {
   const hoy = new Date();
-  const hasta = toISO(hoy);
+  const hasta = toLocalYMD(hoy);
   if (id === 'hoy')   return { desde: hasta, hasta };
   if (id === '7d') {
     const d = new Date(hoy); d.setDate(d.getDate() - 6);
-    return { desde: toISO(d), hasta };
+    return { desde: toLocalYMD(d), hasta };
   }
   if (id === 'mes') {
     const d = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    return { desde: toISO(d), hasta };
+    return { desde: toLocalYMD(d), hasta };
   }
   if (id === '60d') {
     const d = new Date(hoy); d.setDate(d.getDate() - 59);
-    return { desde: toISO(d), hasta };
+    return { desde: toLocalYMD(d), hasta };
   }
   return null; // custom
 }

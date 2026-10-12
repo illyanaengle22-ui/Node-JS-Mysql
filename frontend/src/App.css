@@ -1559,6 +1559,13 @@ a.btn-ver:hover {
   border-color: var(--red);
 }
 
+.reporte-stat-card--alerta {
+  border-color: #d4a373;
+}
+.reporte-stat-card--alerta .reporte-stat-icon {
+  color: #d4a373;
+}
+
 .reporte-stat-icon {
   font-size: 1.8rem;
   color: var(--red);
